@@ -473,19 +473,40 @@ function updatePinDots(){
 
 function changePin(){ showPin('set'); }
 async function claude(messages,max=4000){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key':D.key,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:max,messages})
-  });
-  const d=await r.json();
-  if(d.error) throw new Error(d.error.message||'API error');
-  return (d.content||[]).find(c=>c.type==='text')?.text||'';
+  if(!D.key) throw new Error('No API key set. Go to More → API Key.');
+  let r;
+  try {
+    r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':D.key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:max,messages})
+    });
+  } catch(netErr){
+    console.error('[claude] network error', netErr);
+    throw new Error('Network error: '+(netErr.message||'fetch failed'));
+  }
+  let d;
+  try { d = await r.json(); }
+  catch(parseErr){
+    console.error('[claude] parse error, status', r.status);
+    throw new Error('API returned non-JSON (status '+r.status+')');
+  }
+  if(!r.ok || d.error){
+    console.error('[claude] API error', r.status, d);
+    const msg = (d.error && (d.error.message||d.error.type)) || ('HTTP '+r.status);
+    throw new Error(msg);
+  }
+  const text = (d.content||[]).find(c=>c.type==='text')?.text;
+  if(!text){
+    console.error('[claude] empty response', d);
+    throw new Error('Empty response from API');
+  }
+  return text;
 }
 
 async function setup(){
@@ -4794,5 +4815,4 @@ function init(){uiAcc();rHome();rBud();rAna();rMore()}
 load();
 initPin();
 </script>
-</body>
-</html>
+
