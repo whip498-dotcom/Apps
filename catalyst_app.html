@@ -1749,6 +1749,220 @@ initCheckin();
 updateHeader();
 </script>
 
+<!-- Hidden input for progress photo capture -->
+<input type="file" id="photoInput" accept="image/*" capture="user" onchange="takePhoto(event)" style="display:none">
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// EXTENSIONS: Offline mode, AI coach, Correlations, Progress photos
+// Added as a separate block so the core app keeps working even if this
+// block has an issue.
+// ═══════════════════════════════════════════════════════════════════
+
+// ---------- 1. OFFLINE SERVICE WORKER ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('catalyst-sw.js').catch(function(e){
+      console.warn('SW register failed:', e);
+    });
+  });
+}
+
+// ---------- 2. PROGRESS PHOTOS ----------
+var PHOTO_KEY = 'catalyst_photos_v1';
+var photos = [];
+try { var p = localStorage.getItem(PHOTO_KEY); if (p) photos = JSON.parse(p); } catch(e){}
+function savePhotos() { try { localStorage.setItem(PHOTO_KEY, JSON.stringify(photos)); } catch(e){ alert('Storage full. Delete some older photos.'); } }
+
+function takePhoto(ev) {
+  var file = ev.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxDim = 600;
+      var w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+      var weight = (typeof checkins !== 'undefined' && checkins.length) ? checkins[checkins.length-1].weight : null;
+      photos.push({ date: (typeof todayStr === 'function' ? todayStr() : new Date().toISOString().split('T')[0]), dataUrl: dataUrl, weight: weight });
+      savePhotos();
+      if (typeof renderAnalysis === 'function') renderAnalysis();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+}
+
+function deletePhoto(idx) {
+  if (!confirm('Delete this photo?')) return;
+  photos.splice(idx, 1);
+  savePhotos();
+  renderAnalysis();
+}
+
+function viewPhoto(idx) {
+  var p = photos[idx];
+  var win = window.open('', '_blank');
+  if (win) win.document.write('<body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+p.dataUrl+'" style="max-width:100%;max-height:100vh"></body>');
+}
+
+function renderPhotosSection() {
+  var html = '<div class="analysis-section" style="border:1px solid rgba(34,197,94,0.2)">';
+  html += '<div class="analysis-title" style="color:#22c55e">PROGRESS PHOTOS</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">';
+  if (!photos.length) {
+    html += '<div style="grid-column:1/-1;text-align:center;padding:20px 0;color:#444;font-size:11px">No photos yet. Capture one to start tracking visual progress.</div>';
+  } else {
+    for (var i = photos.length - 1; i >= 0; i--) {
+      var p = photos[i];
+      html += '<div style="position:relative;aspect-ratio:1;overflow:hidden;border-radius:8px;background:#111">'
+        + '<img src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="viewPhoto('+i+')">'
+        + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:4px 6px;font-size:9px;color:#fff;pointer-events:none">'+p.date+(p.weight?' &middot; '+p.weight+'kg':'')+'</div>'
+        + '<button onclick="deletePhoto('+i+')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;color:#fff;width:22px;height:22px;border-radius:50%;font-size:14px;cursor:pointer;line-height:1">&times;</button>'
+        + '</div>';
+    }
+  }
+  html += '</div>';
+  html += '<button onclick="document.getElementById(\'photoInput\').click()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:#22c55e;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px">+ CAPTURE PROGRESS PHOTO</button>';
+  html += '</div>';
+  return html;
+}
+
+// ---------- 3. AI COACH (reuses FinanceAI API key) ----------
+function buildAICoachCard() {
+  return '<div class="analysis-section" style="border:1px solid rgba(168,85,247,0.2)">'
+    + '<div class="analysis-title" style="color:#a855f7">AI COACH REVIEW</div>'
+    + '<div id="aiCoachOut" style="min-height:24px;font-size:11px;color:#555;margin-bottom:10px">Get a 4-week training review powered by Claude.</div>'
+    + '<button id="aiCoachBtn" onclick="aiCoach()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.1);color:#a855f7;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px">REVIEW MY 4 WEEKS</button>'
+    + '</div>';
+}
+
+async function aiCoach() {
+  var out = document.getElementById('aiCoachOut');
+  var btn = document.getElementById('aiCoachBtn');
+  var key = localStorage.getItem('fk');
+  if (!key) {
+    key = prompt('Paste your Anthropic API key (sk-ant-...). It will be shared with FinanceAI on this device only.');
+    if (!key) return;
+    if (!key.indexOf || key.indexOf('sk-ant-') !== 0) { alert('Key must start with sk-ant-'); return; }
+    localStorage.setItem('fk', key);
+  }
+  btn.disabled = true; btn.textContent = 'ANALYSING...';
+  out.innerHTML = '<span style="color:#666">Reviewing your last 4 weeks...</span>';
+
+  var recentCheckins = (typeof checkins !== 'undefined' ? checkins : []).slice(-28);
+  var recentTraining = (typeof trainingLogs !== 'undefined' ? trainingLogs : []).slice(-28);
+  var avg = function(arr, k) { if (!arr.length) return null; var s = 0, n = 0; arr.forEach(function(x){ if (x[k] != null) { s += x[k]; n++; } }); return n ? +(s/n).toFixed(1) : null; };
+  var volume = recentTraining.reduce(function(s,t){ var sets = t.sets || []; return s + sets.reduce(function(a,se){ return a + (se.weight||0) * (se.reps||0); }, 0); }, 0);
+  var ctx = {
+    checkinsLogged: recentCheckins.length,
+    latestWeight: recentCheckins.length ? recentCheckins[recentCheckins.length-1].weight : null,
+    firstWeight: recentCheckins.length ? recentCheckins[0].weight : null,
+    avgEnergy: avg(recentCheckins, 'energy'),
+    avgSleep: avg(recentCheckins, 'sleep'),
+    avgMotivation: avg(recentCheckins, 'motivation'),
+    trainingSessions: recentTraining.length,
+    totalTonnage: Math.round(volume)
+  };
+
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 700,
+        messages: [{
+          role: 'user',
+          content: 'You are a strength & conditioning coach. Review this trainee\'s last 4 weeks of data. Respond with exactly: (1) 3 short bullets (15 words max each) of what to change, (2) one line recommending either deload or progression with reasoning. No preamble, no pleasantries. Data:\n' + JSON.stringify(ctx, null, 2)
+        }]
+      })
+    });
+    var data = await resp.json();
+    if (!resp.ok || data.error) throw new Error((data.error && data.error.message) || ('HTTP ' + resp.status));
+    var text = (data.content || []).filter(function(c){return c.type==='text';})[0];
+    text = text ? text.text : 'Empty response.';
+    out.innerHTML = '<div style="white-space:pre-wrap;font-size:12px;color:#bbb;line-height:1.8">' + (typeof esc === 'function' ? esc(text) : text) + '</div>';
+  } catch(e) {
+    out.innerHTML = '<div style="color:#f87171;font-size:11px">Error: ' + e.message + '</div>';
+  }
+  btn.disabled = false; btn.textContent = 'REVIEW MY 4 WEEKS';
+}
+
+// ---------- 4. 14-DAY CORRELATION SNAPSHOT ----------
+function renderCorrelationSection() {
+  var trainDates = {};
+  (typeof trainingLogs !== 'undefined' ? trainingLogs : []).forEach(function(t){ if (t.date) trainDates[t.date] = true; });
+  var last14 = [];
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    var ds = d.toISOString().split('T')[0];
+    var ci = (typeof checkins !== 'undefined' ? checkins : []).find(function(c){ return c.date === ds; });
+    last14.push({
+      date: ds,
+      trained: !!trainDates[ds],
+      energy: ci ? ci.energy : null,
+      sleep: ci ? ci.sleep : null
+    });
+  }
+
+  var trained = last14.filter(function(d){return d.trained;});
+  var rest = last14.filter(function(d){return !d.trained;});
+  var trainedE = trained.filter(function(d){return d.energy;});
+  var restE = rest.filter(function(d){return d.energy;});
+  var avgT = trainedE.length ? (trainedE.reduce(function(s,d){return s+d.energy;},0)/trainedE.length) : 0;
+  var avgR = restE.length ? (restE.reduce(function(s,d){return s+d.energy;},0)/restE.length) : 0;
+
+  var html = '<div class="analysis-section" style="border:1px solid rgba(59,130,246,0.2)">';
+  html += '<div class="analysis-title" style="color:#3b82f6">14-DAY SNAPSHOT</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(14,1fr);gap:2px;margin-bottom:10px">';
+  last14.forEach(function(d) {
+    var col = d.trained ? '#22c55e' : (d.energy ? '#2a2a2a' : '#141414');
+    var label = d.trained ? '✓' : '';
+    html += '<div title="'+d.date+(d.energy?' · energy '+d.energy:'')+'" style="aspect-ratio:1;background:'+col+';border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#000;font-weight:700">'+label+'</div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:11px;color:#888;line-height:1.9">'
+    + '<div>Training days: <b style="color:#22c55e">'+trained.length+' / 14</b></div>'
+    + (avgT ? '<div>Avg energy on training days: <b style="color:#ddd">'+avgT.toFixed(1)+' / 10</b></div>' : '')
+    + (avgR ? '<div>Avg energy on rest days: <b style="color:#ddd">'+avgR.toFixed(1)+' / 10</b></div>' : '')
+    + '</div>';
+  html += '</div>';
+  return html;
+}
+
+// ---------- Patch renderAnalysis to include new sections ----------
+(function() {
+  if (typeof renderAnalysis !== 'function') return;
+  var orig = renderAnalysis;
+  window.renderAnalysis = function() {
+    orig();
+    var c = document.getElementById('analysis-content');
+    if (!c) return;
+    // Remove the old static "PHOTO ANALYSIS" info card if present
+    var cards = c.querySelectorAll('.info-card');
+    cards.forEach(function(card){ if ((card.textContent||'').indexOf('PHOTO ANALYSIS') !== -1) card.remove(); });
+    // Append new sections
+    c.insertAdjacentHTML('beforeend', renderCorrelationSection());
+    c.insertAdjacentHTML('beforeend', buildAICoachCard());
+    c.insertAdjacentHTML('beforeend', renderPhotosSection());
+  };
+  // Re-render if user is currently on analysis screen
+  var ana = document.getElementById('screen-analysis');
+  if (ana && ana.classList.contains('active')) window.renderAnalysis();
+})();
+</script>
 
 </body>
 </html>
