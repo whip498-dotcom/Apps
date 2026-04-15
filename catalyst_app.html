@@ -1775,23 +1775,50 @@ try { var p = localStorage.getItem(PHOTO_KEY); if (p) photos = JSON.parse(p); } 
 function savePhotos() { try { localStorage.setItem(PHOTO_KEY, JSON.stringify(photos)); } catch(e){ alert('Storage full. Delete some older photos.'); } }
 
 function takePhoto(ev) {
-  var file = ev.target.files[0]; if (!file) return;
+  var file = ev.target.files[0];
+  if (!file) { return; }
+  console.log('[photos] file picked:', file.name, file.type, file.size, 'bytes');
+  if (file.size > 25 * 1024 * 1024) { alert('Photo too large (>25MB). Pick a smaller one.'); ev.target.value = ''; return; }
   var reader = new FileReader();
+  reader.onerror = function(){ alert('Could not read file.'); };
   reader.onload = function(e) {
     var img = new Image();
+    img.onerror = function(){ alert('Could not decode image. iOS sometimes struggles with HEIC — try Edit → Export as JPEG in Photos app first.'); };
     img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var maxDim = 600;
-      var w = img.width, h = img.height;
-      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
-      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      var dataUrl = canvas.toDataURL('image/jpeg', 0.72);
-      var weight = (typeof checkins !== 'undefined' && checkins.length) ? checkins[checkins.length-1].weight : null;
-      photos.push({ date: (typeof todayStr === 'function' ? todayStr() : new Date().toISOString().split('T')[0]), dataUrl: dataUrl, weight: weight });
-      savePhotos();
-      if (typeof renderAnalysis === 'function') renderAnalysis();
+      try {
+        var canvas = document.createElement('canvas');
+        var maxDim = 600;
+        var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+        if (!w || !h) { alert('Image has zero dimensions.'); return; }
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h > w && h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        else if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        if (!dataUrl || dataUrl.length < 500) { alert('Canvas export produced empty image — may be an iOS HEIC issue.'); return; }
+        console.log('[photos] dataUrl length:', dataUrl.length);
+        var weight = (typeof checkins !== 'undefined' && checkins.length) ? checkins[checkins.length-1].weight : null;
+        photos.push({
+          date: (typeof todayStr === 'function' ? todayStr() : new Date().toISOString().split('T')[0]),
+          dataUrl: dataUrl,
+          weight: weight
+        });
+        try {
+          localStorage.setItem(PHOTO_KEY, JSON.stringify(photos));
+          console.log('[photos] saved, total:', photos.length);
+        } catch(err) {
+          photos.pop();
+          alert('Could not save — storage full. Currently using ' + Math.round((JSON.stringify(photos).length + JSON.stringify(localStorage).length) / 1024) + ' KB. Delete some photos first, or older check-ins.');
+          return;
+        }
+        if (typeof renderAnalysis === 'function') renderAnalysis();
+      } catch(err) {
+        alert('Error processing photo: ' + err.message);
+        console.error(err);
+      }
     };
     img.src = e.target.result;
   };
