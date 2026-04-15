@@ -1840,23 +1840,36 @@ function viewPhoto(idx) {
 }
 
 function renderPhotosSection() {
+  var count = photos.length;
   var html = '<div class="analysis-section" style="border:1px solid rgba(34,197,94,0.2)">';
-  html += '<div class="analysis-title" style="color:#22c55e">PROGRESS PHOTOS</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">';
-  if (!photos.length) {
-    html += '<div style="grid-column:1/-1;text-align:center;padding:20px 0;color:#444;font-size:11px">No photos yet. Capture one to start tracking visual progress.</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<div class="analysis-title" style="color:#22c55e;margin:0">PROGRESS PHOTOS</div>';
+  html += '<div style="font-size:10px;color:#666;letter-spacing:1px">' + count + ' saved</div>';
+  html += '</div>';
+
+  html += '<button onclick="document.getElementById(\'photoInput\').click()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:#22c55e;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px;margin-bottom:14px">+ ADD PROGRESS PHOTO</button>';
+
+  if (!count) {
+    html += '<div style="text-align:center;padding:16px 0;color:#444;font-size:11px">No photos yet. Upload one or take a new one.</div>';
   } else {
+    html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
     for (var i = photos.length - 1; i >= 0; i--) {
       var p = photos[i];
-      html += '<div style="position:relative;aspect-ratio:1;overflow:hidden;border-radius:8px;background:#111">'
-        + '<img src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="viewPhoto('+i+')">'
-        + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:4px 6px;font-size:9px;color:#fff;pointer-events:none">'+p.date+(p.weight?' &middot; '+p.weight+'kg':'')+'</div>'
-        + '<button onclick="deletePhoto('+i+')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;color:#fff;width:22px;height:22px;border-radius:50%;font-size:14px;cursor:pointer;line-height:1">&times;</button>'
-        + '</div>';
+      var dateLabel = p.date || '(no date)';
+      var weightLabel = p.weight ? (p.weight + ' kg') : '';
+      html += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden">'
+        + '<div style="position:relative;aspect-ratio:1;background:#111;overflow:hidden">'
+        +   '<img src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="viewPhoto('+i+')">'
+        +   '<button onclick="deletePhoto('+i+')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.75);border:none;color:#fff;width:24px;height:24px;border-radius:50%;font-size:15px;cursor:pointer;line-height:1">&times;</button>'
+        + '</div>'
+        + '<div style="padding:8px 10px">'
+        +   '<div style="font-size:12px;color:#ddd;font-weight:700;letter-spacing:0.5px">' + dateLabel + '</div>'
+        +   (weightLabel ? '<div style="font-size:10px;color:#666;margin-top:2px">' + weightLabel + '</div>' : '')
+        + '</div>'
+      + '</div>';
     }
+    html += '</div>';
   }
-  html += '</div>';
-  html += '<button onclick="document.getElementById(\'photoInput\').click()" style="width:100%;padding:11px;border-radius:10px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:#22c55e;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px">+ ADD PROGRESS PHOTO</button>';
   html += '</div>';
   return html;
 }
