@@ -1857,7 +1857,16 @@ async function aiCoach() {
   out.innerHTML = '<span style="color:#666">Reviewing your last 4 weeks...</span>';
 
   var recentCheckins = (typeof checkins !== 'undefined' ? checkins : []).slice(-28);
-  var recentTraining = (typeof trainingLogs !== 'undefined' ? trainingLogs : []).slice(-28);
+  // trainingLogs is keyed by exercise id. Flatten to a list of sessions for aggregation.
+  var allSessions = [];
+  if (typeof trainingLogs === 'object' && trainingLogs) {
+    Object.keys(trainingLogs).forEach(function(exId){
+      (trainingLogs[exId] || []).forEach(function(sess){ allSessions.push(sess); });
+    });
+  }
+  // Last 28 days of sessions
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 28);
+  var recentTraining = allSessions.filter(function(s){ return s.date && new Date(s.date) >= cutoff; });
   var avg = function(arr, k) { if (!arr.length) return null; var s = 0, n = 0; arr.forEach(function(x){ if (x[k] != null) { s += x[k]; n++; } }); return n ? +(s/n).toFixed(1) : null; };
   var volume = recentTraining.reduce(function(s,t){ var sets = t.sets || []; return s + sets.reduce(function(a,se){ return a + (se.weight||0) * (se.reps||0); }, 0); }, 0);
   var ctx = {
@@ -1902,8 +1911,15 @@ async function aiCoach() {
 
 // ---------- 4. 14-DAY CORRELATION SNAPSHOT ----------
 function renderCorrelationSection() {
+  // trainingLogs is an object keyed by exercise id. Walk each exercise's session list.
   var trainDates = {};
-  (typeof trainingLogs !== 'undefined' ? trainingLogs : []).forEach(function(t){ if (t.date) trainDates[t.date] = true; });
+  if (typeof trainingLogs === 'object' && trainingLogs) {
+    Object.keys(trainingLogs).forEach(function(exId){
+      (trainingLogs[exId] || []).forEach(function(sess){
+        if (sess && sess.date) trainDates[sess.date] = true;
+      });
+    });
+  }
   var last14 = [];
   for (var i = 13; i >= 0; i--) {
     var d = new Date(); d.setDate(d.getDate() - i);
