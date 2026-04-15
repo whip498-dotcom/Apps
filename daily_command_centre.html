@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Command Centre"/>
+<meta name="theme-color" content="#0a0a10"/>
+<title>Command Centre</title>
+<style>
+  :root {
+    --bg: #0a0a10;
+    --surface: #13131e;
+    --surface2: #1c1c2a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f5;
+    --text2: #9090a8;
+    --text3: #55556a;
+    --accent: #f59e0b;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 0);
+  }
+  #app {
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 0 18px 40px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 20px 0 16px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .clock { font-size: 40px; font-weight: 300; letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .date-str { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+  .badge { font-size: 12px; color: var(--text2); text-align: right; max-width: 150px; line-height: 1.4; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* FOCUS CARD */
+  .focus-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .focus-card input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  .focus-card input::placeholder { color: var(--text3); }
+
+  /* CHECK-IN CARD */
+  .checkin-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .checkin-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .checkin-saved { font-size: 11px; color: var(--text3); opacity: 0; transition: opacity 0.4s; }
+  .checkin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .rating-label { font-size: 12px; color: var(--text2); margin-bottom: 7px; }
+  .dots { display: flex; gap: 7px; }
+  .dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .dot.active { border-color: transparent; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+  /* SCHEDULE */
+  .block-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius);
+    margin-bottom: 7px;
+    border: 0.5px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .block-item.current { background: var(--surface2); }
+  .block-item.done { opacity: 0.38; }
+  .block-bar { width: 3px; height: 42px; border-radius: 2px; flex-shrink: 0; }
+  .block-meta { flex: 1; min-width: 0; }
+  .block-time { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+  .block-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block-name.done { text-decoration: line-through; }
+  .now-tag { font-size: 11px; font-weight: 600; }
+  .check-circle {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .check-circle.checked { border-color: transparent; }
+  .delete-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 20px; cursor: pointer; border-radius: 6px; flex-shrink: 0; }
+
+  /* ADD BLOCK FORM */
+  .add-form {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 0.5px solid var(--border);
+    display: none;
+  }
+  .add-form.open { display: block; }
+  .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+
+  /* INPUTS / BUTTONS */
+  input[type=text], input[type=time], select, textarea {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+  input[type=text]::placeholder, textarea::placeholder { color: var(--text3); }
+  input[type=time]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.4); }
+  select option { background: #1c1c2a; }
+  button {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  button:active { background: var(--surface2); }
+  button.primary { border-color: var(--accent); color: var(--accent); }
+
+  /* NOTES */
+  textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+  .notes-hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* REMINDERS */
+  .reminder-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius);
+    margin-bottom: 7px;
+    border: 0.5px solid var(--border);
+    background: var(--surface);
+    transition: opacity 0.15s;
+  }
+  .reminder-item.done { opacity: 0.38; }
+  .rem-circle {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .rem-circle.done { border-color: #3B6D11; background: #3B6D11; }
+  .rem-text { flex: 1; font-size: 15px; }
+  .rem-text.done { text-decoration: line-through; color: var(--text2); }
+  .rem-count { font-size: 12px; color: var(--text3); }
+  .add-rem-row { display: flex; gap: 8px; }
+  .add-rem-row input { flex: 1; }
+
+  /* SECTION SPACING */
+  .section { margin-bottom: 26px; }
+  .divider { height: 0.5px; background: var(--border); margin: 6px 0 20px; }
+
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div>
+      <div class="date-str" id="date-str"></div>
+      <div class="clock" id="clock-str"></div>
+    </div>
+    <div class="badge" id="block-badge"></div>
+  </div>
+
+  <!-- FOCUS -->
+  <div class="focus-card section">
+    <div class="section-label" style="margin-bottom:8px;">Today's focus</div>
+    <input type="text" id="focus-input" placeholder="What's the one thing that matters today?" oninput="saveFocus()" autocomplete="off"/>
+  </div>
+
+  <!-- CHECK-IN -->
+  <div class="checkin-card section">
+    <div class="checkin-row">
+      <div class="section-label" style="margin-bottom:0;">Morning check-in</div>
+      <div class="checkin-saved" id="checkin-saved">Saved</div>
+    </div>
+    <div class="checkin-grid">
+      <div>
+        <div class="rating-label">Mood</div>
+        <div class="dots" id="mood-dots"></div>
+      </div>
+      <div>
+        <div class="rating-label">Readiness</div>
+        <div class="dots" id="ready-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label" style="margin-bottom:0;">Schedule</div>
+      <button onclick="toggleAddBlock()">+ Add block</button>
+    </div>
+    <div class="add-form" id="add-block-form">
+      <div class="form-row">
+        <input type="time" id="block-time" style="flex:1;"/>
+        <select id="block-color" style="width:105px;">
+          <option value="#185FA5">Work</option>
+          <option value="#854F0B">Trading</option>
+          <option value="#3B6D11">Gym</option>
+          <option value="#993C1D">Family</option>
+          <option value="#534AB7">Morning</option>
+          <option value="#5F5E5A">Other</option>
+        </select>
+      </div>
+      <input type="text" id="block-label" placeholder="Block label..." style="margin-bottom:10px;" autocomplete="off"/>
+      <div class="form-row">
+        <button class="primary" onclick="saveBlock()" style="flex:1;">Save</button>
+        <button onclick="toggleAddBlock()">Cancel</button>
+      </div>
+    </div>
+    <div id="schedule-list"></div>
+  </div>
+
+  <!-- WEEKLY NOTES -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label" style="margin-bottom:0;">Weekly notes</div>
+      <button id="notes-btn" onclick="toggleNotes()">Show</button>
+    </div>
+    <div id="notes-area" style="display:none;">
+      <textarea id="weekly-notes" placeholder="Plans, ideas, trade prep, family reminders for the week..." oninput="saveNotes()"></textarea>
+      <div class="notes-hint">Auto-saved · resets each Monday</div>
+    </div>
+  </div>
+
+  <!-- REMINDERS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label" style="margin-bottom:0;">Reminders</div>
+      <span class="rem-count" id="rem-count"></span>
+    </div>
+    <div id="reminders-list"></div>
+    <div class="add-rem-row">
+      <input type="text" id="rem-input" placeholder="Add a reminder..." autocomplete="off" onkeydown="if(event.key==='Enter')addReminder();"/>
+      <button onclick="addReminder()">Add</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const todayKey = new Date().toDateString();
+const WEEK_KEY = (() => {
+  const d = new Date(), day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(new Date(d).setDate(diff)).toDateString();
+})();
+
+function getNY6amLocal() {
+  try {
+    const now = new Date();
+    const ls = now.toLocaleString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit'});
+    const ns = now.toLocaleString('en-US', {timeZone:'America/New_York',hour12:false,hour:'2-digit',minute:'2-digit'});
+    const parse = s => { const [h,m] = s.replace(/^24:/,'00:').split(':').map(Number); return h*60+m; };
+    const diff = parse(ls) - parse(ns);
+    let lm = (6*60) + diff;
+    if (lm >= 1440) lm -= 1440;
+    if (lm < 0) lm += 1440;
+    return String(Math.floor(lm/60)).padStart(2,'0') + ':' + String(lm%60).padStart(2,'0');
+  } catch(e) { return '19:30'; }
+}
+
+const tradeTime = getNY6amLocal();
+
+const DEFAULT_BLOCKS = [
+  {id:'d1',time:'06:00',label:'Wake up',color:'#534AB7'},
+  {id:'d2',time:'07:30',label:'Work',color:'#185FA5'},
+  {id:'d3',time:'14:30',label:'Family / wind down',color:'#993C1D'},
+  {id:'d4',time:'16:00',label:'Gym',color:'#3B6D11'},
+  {id:'d5',time:'18:00',label:'Pre-market prep',color:'#854F0B'},
+  {id:'d6',time:tradeTime,label:'US trading session (NY 6am open)',color:'#A32D2D'},
+  {id:'d7',time:'23:30',label:'Wind down',color:'#5F5E5A'},
+];
+
+const DOT_COLORS = ['#E24B4A','#EF9F27','#FAC775','#97C459','#1D9E75'];
+
+let blocks = [], completedBlocks = {}, reminders = [], mood = 0, readiness = 0, notesOpen = false;
+
+const $ = id => document.getElementById(id);
+
+function timeToMins(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+function nowMins() { const n = new Date(); return n.getHours()*60+n.getMinutes(); }
+function fmt12(t) {
+  const [h,m] = t.split(':').map(Number);
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+}
+
+function updateClock() {
+  const n = new Date();
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  $('date-str').textContent = `${DAYS[n.getDay()]}, ${n.getDate()} ${MONTHS[n.getMonth()]} ${n.getFullYear()}`;
+  $('clock-str').textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0');
+  updateBadge();
+}
+
+function updateBadge() {
+  const now = nowMins();
+  const sorted = [...blocks].sort((a,b) => timeToMins(a.time)-timeToMins(b.time));
+  let cur = null;
+  for (const b of sorted) if (timeToMins(b.time) <= now) cur = b;
+  const el = $('block-badge');
+  if (cur) { el.textContent = cur.label; el.style.color = cur.color; }
+  else { el.textContent = ''; }
+}
+
+function renderDots(containerId, val, setFn) {
+  $(containerId).innerHTML = [1,2,3,4,5].map(i =>
+    `<div class="dot${i<=val?' active':''}" style="${i<=val?`background:${DOT_COLORS[i-1]};`:''}border-color:${i<=val?DOT_COLORS[i-1]:'rgba(255,255,255,0.14)'};" onclick="${setFn}(${i})"></div>`
+  ).join('');
+}
+
+function setMood(v) { mood = v; renderDots('mood-dots', mood, 'setMood'); saveCheckin(); showSaved(); }
+function setReadiness(v) { readiness = v; renderDots('ready-dots', readiness, 'setReadiness'); saveCheckin(); showSaved(); }
+
+function showSaved() {
+  const el = $('checkin-saved'); el.style.opacity = 1;
+  setTimeout(() => el.style.opacity = 0, 1500);
+}
+
+function checkmark(color) {
+  return `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function renderSchedule() {
+  const now = nowMins();
+  const sorted = [...blocks].sort((a,b) => timeToMins(a.time)-timeToMins(b.time));
+  let cur = null;
+  for (const b of sorted) if (timeToMins(b.time) <= now) cur = b;
+  $('schedule-list').innerHTML = sorted.map(b => {
+    const isCur = cur && cur.id === b.id, isDone = completedBlocks[b.id];
+    return `<div class="block-item${isCur?' current':''}${isDone?' done':''}" onclick="toggleBlock('${b.id}')">
+      <div class="block-bar" style="background:${b.color};"></div>
+      <div class="block-meta">
+        <div class="block-time">${fmt12(b.time)}</div>
+        <div class="block-name${isDone?' done':''}">${b.label}</div>
+      </div>
+      ${isCur ? `<span class="now-tag" style="color:${b.color};">Now</span>` : ''}
+      <div class="check-circle${isDone?' checked':''}" style="${isDone?`background:${b.color};border-color:${b.color};`:''}">
+        ${isDone ? checkmark('white') : ''}
+      </div>
+      ${!b.id.startsWith('d') ? `<div class="delete-btn" onclick="event.stopPropagation();deleteBlock('${b.id}')">×</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderReminders() {
+  const pending = reminders.filter(r=>!r.done), done = reminders.filter(r=>r.done);
+  $('rem-count').textContent = pending.length ? `${pending.length} pending` : reminders.length ? 'all done' : '';
+  $('reminders-list').innerHTML = [...pending,...done].map(r =>
+    `<div class="reminder-item${r.done?' done':''}">
+      <div class="rem-circle${r.done?' done':''}" onclick="toggleReminder('${r.id}')">
+        ${r.done ? checkmark('white') : ''}
+      </div>
+      <span class="rem-text${r.done?' done':''}">${r.text}</span>
+      <div class="delete-btn" onclick="deleteReminder('${r.id}')">×</div>
+    </div>`
+  ).join('') || `<div style="font-size:14px;color:var(--text3);padding:4px 0 8px;">No reminders yet.</div>`;
+}
+
+// STORAGE HELPERS (localStorage fallback)
+function store(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
+}
+
+function toggleAddBlock() {
+  const f = $('add-block-form'); f.classList.toggle('open');
+}
+
+function saveBlock() {
+  const t = $('block-time').value, l = $('block-label').value.trim(), c = $('block-color').value;
+  if (!t || !l) return;
+  blocks.push({id:'c'+Date.now(), time:t, label:l, color:c});
+  store('custom_blocks', blocks.filter(b=>!b.id.startsWith('d')));
+  $('block-time').value = ''; $('block-label').value = '';
+  $('add-block-form').classList.remove('open');
+  renderSchedule();
+}
+
+function deleteBlock(id) {
+  blocks = blocks.filter(b => b.id !== id);
+  store('custom_blocks', blocks.filter(b=>!b.id.startsWith('d')));
+  renderSchedule();
+}
+
+function toggleBlock(id) {
+  completedBlocks[id] = !completedBlocks[id];
+  store(`comp_${todayKey}`, completedBlocks);
+  renderSchedule();
+}
+
+function saveFocus() { store(`focus_${todayKey}`, $('focus-input').value); }
+function saveCheckin() { store(`checkin_${todayKey}`, {mood, readiness}); }
+function saveNotes() { store(`notes_${WEEK_KEY}`, $('weekly-notes').value); }
+
+function toggleNotes() {
+  notesOpen = !notesOpen;
+  $('notes-area').style.display = notesOpen ? 'block' : 'none';
+  $('notes-btn').textContent = notesOpen ? 'Hide' : 'Show';
+}
+
+function addReminder() {
+  const inp = $('rem-input'), txt = inp.value.trim();
+  if (!txt) return;
+  reminders.push({id:'r'+Date.now(), text:txt, done:false});
+  store('reminders', reminders); inp.value = ''; renderReminders();
+}
+
+function toggleReminder(id) {
+  reminders = reminders.map(r => r.id===id ? {...r,done:!r.done} : r);
+  store('reminders', reminders); renderReminders();
+}
+
+function deleteReminder(id) {
+  reminders = reminders.filter(r => r.id!==id);
+  store('reminders', reminders); renderReminders();
+}
+
+function init() {
+  const custom = load('custom_blocks', []);
+  blocks = [...DEFAULT_BLOCKS, ...custom];
+  completedBlocks = load(`comp_${todayKey}`, {});
+  reminders = load('reminders', []);
+  const ci = load(`checkin_${todayKey}`, {mood:0,readiness:0});
+  mood = ci.mood || 0; readiness = ci.readiness || 0;
+  $('focus-input').value = load(`focus_${todayKey}`, '');
+  $('weekly-notes').value = load(`notes_${WEEK_KEY}`, '');
+  renderDots('mood-dots', mood, 'setMood');
+  renderDots('ready-dots', readiness, 'setReadiness');
+  renderSchedule(); renderReminders();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(renderSchedule, 60000);
+}
+
+init();
+</script>
+</body>
+</html>

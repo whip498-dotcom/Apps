@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Catalyst">
+<meta name="theme-color" content="#080a0e">
+<title>Catalyst</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cabinet+Grotesk:wght@700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#080a0e;color:#fff;font-family:'DM Mono',monospace;overflow-x:hidden}
+input,textarea,select{font-family:'DM Mono',monospace;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;outline:none;width:100%}
+input:focus,textarea:focus{border-color:rgba(255,255,255,0.3)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:rgba(255,255,255,0.08);border-radius:99px;border:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer}
+button{cursor:pointer;border:none;font-family:'DM Mono',monospace;outline:none}
+textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:#222;border-radius:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* Layout */
+#app{display:flex;flex-direction:column;height:100vh}
+#header{background:rgba(8,10,14,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);padding:52px 20px 0;flex-shrink:0;z-index:20}
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#bottom-nav{background:rgba(8,10,14,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,0.06);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-item{flex:1;padding:12px 0 8px;display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent;border:none;cursor:pointer;transition:opacity .15s}
+.nav-item .nav-icon{font-size:20px;line-height:1}
+.nav-item .nav-label{font-size:9px;letter-spacing:1px;color:#555;transition:color .15s}
+.nav-item.active .nav-label{color:#22c55e}
+
+/* Screens */
+.screen{display:none;padding:20px 16px 40px;max-width:680px;margin:0 auto;animation:fadeUp .3s ease}
+.screen.active{display:block}
+
+/* Cards */
+.card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px;margin-bottom:14px}
+.section-title{font-size:10px;color:#555;letter-spacing:2px;margin-bottom:14px}
+.label{font-size:10px;color:#888;letter-spacing:2px;display:block;margin-bottom:8px}
+
+/* Inputs */
+.input-num{padding:12px 48px 12px 16px;font-size:20px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.input-date{padding:10px 14px;font-size:13px;color-scheme:dark}
+.input-sm{padding:8px 10px;font-size:14px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+
+/* Buttons */
+.btn-primary{width:100%;padding:16px;border-radius:14px;font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:700;background:linear-gradient(135deg,#22c55e,#16a34a);color:#000;box-shadow:0 4px 20px rgba(34,197,94,.3);transition:opacity .2s}
+.btn-primary:disabled{background:rgba(255,255,255,.05);color:#444;box-shadow:none}
+.btn-sm{padding:10px 16px;border-radius:10px;font-size:12px;letter-spacing:.5px;transition:all .15s}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.1);color:#666;font-size:11px;padding:8px 14px;border-radius:8px}
+
+/* Tags */
+.tag{font-size:9px;padding:3px 10px;border-radius:99px;letter-spacing:2px}
+.tag-green{background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+.tag-blue{background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2)}
+
+/* Analysis sections */
+.analysis-section{margin-bottom:12px;padding:12px 14px;background:rgba(255,255,255,.02);border-radius:12px}
+.analysis-title{font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px}
+.analysis-body{font-size:12px;color:#aaa;line-height:1.9;white-space:pre-wrap}
+
+/* Exercise card */
+.ex-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border .2s}
+.ex-header{padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.ex-body{padding:0 16px 16px;border-top:1px solid rgba(255,255,255,.05)}
+.ex-name{font-size:13px;color:#fff;font-family:'Cabinet Grotesk',sans-serif;font-weight:700}
+.ex-meta{font-size:10px;color:#555;margin-top:2px}
+
+/* Target box */
+.target-box{padding:12px 14px;border-radius:10px;margin:14px 0}
+.target-stat{text-align:center}
+.target-stat .val{font-size:20px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif;color:#fff}
+.target-stat .lbl{font-size:9px;color:#555;margin-top:2px}
+
+/* Set inputs */
+.set-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.set-num{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;flex-shrink:0}
+
+/* History mini chart */
+.mini-bar{background:rgba(255,255,255,.04);border-radius:8px;padding:8px 10px;text-align:center;flex-shrink:0}
+
+/* Stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;text-align:center}
+.stat-val{font-size:18px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.stat-lbl{font-size:9px;color:#555;letter-spacing:2px;margin-bottom:4px}
+
+/* Dot indicator */
+.dot{width:8px;height:8px;border-radius:50%;position:absolute;top:-3px;right:-3px;border:1.5px solid #080a0e}
+
+/* Info card */
+.info-card{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.info-title{font-size:10px;color:#3b82f6;letter-spacing:2px;margin-bottom:6px}
+.info-body{font-size:12px;color:#666;line-height:1.8}
+
+/* Backup */
+.backup-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px 16px;margin-top:16px}
+.backup-btn{width:100%;padding:11px;border-radius:10px;font-size:11px;letter-spacing:1px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <h1 style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px" id="header-title">Catalyst</h1>
+          <span class="tag tag-green" id="header-tag">LEAN BULK</span>
+        </div>
+        <div style="font-size:10px;color:#444;margin-top:2px" id="header-sub">Week 1 · 140mg Test E/week</div>
+      </div>
+      <div style="text-align:right" id="header-right"></div>
+    </div>
+    <div id="sub-nav" style="display:flex;overflow-x:auto"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- CHECK-IN SCREEN -->
+    <div class="screen active" id="screen-checkin">
+      <div class="card">
+        <div class="section-title" id="checkin-week-label">WEEK 1 · WEIGHT</div>
+        <span class="label">BODYWEIGHT (kg)</span>
+        <div style="position:relative;margin-bottom:6px">
+          <input type="number" class="input-num" id="ci-weight" step="0.1" placeholder="79.9">
+          <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:#555">kg</span>
+        </div>
+        <div id="ci-diff" style="font-size:10px;min-height:16px;margin-bottom:14px"></div>
+        <span class="label">DATE</span>
+        <input type="date" class="input-date" id="ci-date">
+      </div>
+      <div class="card">
+        <div class="section-title">SUBJECTIVE MARKERS</div>
+        <div id="ci-sliders"></div>
+      </div>
+      <div class="info-card">
+        <div class="info-title">📸 PROGRESS PHOTO</div>
+        <div class="info-body">Upload your photo in <strong style="color:#aaa">Claude chat</strong> weekly for body composition coaching.</div>
+      </div>
+      <div class="card">
+        <div class="section-title">NOTES</div>
+        <textarea id="ci-notes" rows="3" placeholder="How has the week been? Injuries, stress, diet..."></textarea>
+      </div>
+      <button class="btn-primary" id="ci-save-btn" disabled onclick="saveCheckin()">Save &amp; Run Analysis →</button>
+    </div>
+
+    <!-- TRAINING SCREEN -->
+    <div class="screen" id="screen-training">
+      <div id="training-content"></div>
+    </div>
+
+    <!-- HISTORY SCREEN -->
+    <div class="screen" id="screen-history">
+      <div id="history-content"></div>
+    </div>
+
+    <!-- ANALYSIS SCREEN -->
+    <div class="screen" id="screen-analysis">
+      <div id="analysis-content"></div>
+    </div>
+
+    <!-- NUTRITION SCREEN -->
+    <div class="screen" id="screen-nutrition">
+      <div id="nutrition-content"></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="nav-item active" onclick="showScreen('checkin')" id="nav-checkin">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">CHECK-IN</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('training')" id="nav-training">
+      <span class="nav-icon">💪</span>
+      <span class="nav-label">TRAINING</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('nutrition')" id="nav-nutrition">
+      <span class="nav-icon">🥗</span>
+      <span class="nav-label">NUTRITION</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('history')" id="nav-history">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">HISTORY</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('analysis')" id="nav-analysis">
+      <span class="nav-icon">🤖</span>
+      <span class="nav-label">ANALYSIS</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// PROGRAM DATA
+// ═══════════════════════════════════
+var PROGRAM = [
+  { day:'Monday',   label:'LEGS — Primary',            color:'#22c55e', focus:'Quad dominant + hamstring', note:'Legs are your #1 priority. Never skip.', exercises:[
+    {id:'back-squat',      name:'Barbell Back Squat',        sets:4, reps:'6–8',   rest:'3 min',   inc:5,   cue:'Controlled descent, drive knees out, full depth.'},
+    {id:'leg-press',       name:'Leg Press',                 sets:4, reps:'10–12', rest:'2 min',   inc:10,  cue:'Feet shoulder-width, high on platform for quad sweep.'},
+    {id:'bulgarian',       name:'Bulgarian Split Squat',     sets:3, reps:'10–12', rest:'90 sec',  inc:2.5, cue:'Front foot forward. Feel it in the front quad.'},
+    {id:'rdl-mon',         name:'Romanian Deadlift',         sets:4, reps:'10–12', rest:'2 min',   inc:5,   cue:'Hinge at hip, bar close. Full hamstring stretch.'},
+    {id:'leg-curl-s',      name:'Leg Curl (Seated)',         sets:3, reps:'12–15', rest:'90 sec',  inc:2.5, cue:'Full extension, squeeze at top. Slow negative.'},
+    {id:'calf-st-mon',     name:'Standing Calf Raise',       sets:5, reps:'12–15', rest:'60 sec',  inc:5,   cue:'Full range. Stretch at bottom, pause at top.'},
+    {id:'calf-se-mon',     name:'Seated Calf Raise',         sets:4, reps:'15–20', rest:'60 sec',  inc:5,   cue:'Hits soleus — important for calf thickness.'},
+  ]},
+  { day:'Tuesday',  label:'PUSH — Upper Chest',         color:'#f97316', focus:'Upper chest, lateral delts, triceps', note:'Lead with incline while fresh. Upper pec is your weak point.', exercises:[
+    {id:'cable-fly-hi',    name:'Low-to-High Cable Fly',     sets:3, reps:'15',    rest:'60 sec',  inc:2.5, cue:'Warm up. Pull from low to high, feel upper pec stretch.'},
+    {id:'incline-bar',     name:'Incline Barbell Press',     sets:4, reps:'6–8',   rest:'3 min',   inc:5,   cue:'45° incline. Controlled descent to upper chest.'},
+    {id:'incline-db',      name:'Incline Dumbbell Press',    sets:3, reps:'10–12', rest:'2 min',   inc:2.5, cue:'30° incline. Full stretch at bottom.'},
+    {id:'flat-db',         name:'Flat Dumbbell Press',       sets:3, reps:'10–12', rest:'2 min',   inc:2.5, cue:'Good range of motion, slow eccentric.'},
+    {id:'cable-lat-tue',   name:'Cable Lateral Raise',       sets:4, reps:'15–20', rest:'60 sec',  inc:2.5, cue:'Lead with elbow not hand. Constant tension.'},
+    {id:'seated-lat',      name:'Seated Lateral Raise',      sets:3, reps:'15–20', rest:'60 sec',  inc:2.5, cue:'Slight forward lean. Strict form.'},
+    {id:'oh-tri',          name:'Overhead Tricep Extension', sets:3, reps:'12–15', rest:'90 sec',  inc:2.5, cue:'Full stretch overhead. Hits long head.'},
+    {id:'tri-down',        name:'Tricep Pushdown',           sets:3, reps:'12–15', rest:'90 sec',  inc:2.5, cue:'Elbows pinned. Full extension.'},
+  ]},
+  { day:'Wednesday',label:'PULL — Back & Biceps',       color:'#3b82f6', focus:'Lat width, mid-back, biceps', note:'Back is your best feature. Maintain and build.', exercises:[
+    {id:'pull-up',         name:'Weighted Pull-Up',          sets:4, reps:'6–8',   rest:'3 min',   inc:2.5, cue:'Full hang to chin over bar. Initiate with lats.'},
+    {id:'bb-row',          name:'Barbell Row (Pendlay)',      sets:4, reps:'6–8',   rest:'2.5 min', inc:5,   cue:'Bar to lower chest. Explosive pull, controlled lower.'},
+    {id:'cable-row',       name:'Seated Cable Row (Wide)',   sets:3, reps:'10–12', rest:'2 min',   inc:5,   cue:'Row to lower chest. Squeeze shoulder blades hard.'},
+    {id:'db-row',          name:'Single Arm DB Row',         sets:3, reps:'10–12', rest:'90 sec',  inc:2.5, cue:'Full stretch at bottom, drive elbow to hip.'},
+    {id:'face-pull',       name:'Face Pull',                 sets:4, reps:'15–20', rest:'60 sec',  inc:2.5, cue:'Rope to forehead, elbows high and wide.'},
+    {id:'incline-curl',    name:'Incline Dumbbell Curl',     sets:3, reps:'10–12', rest:'90 sec',  inc:2.5, cue:'Arms hang back. Full stretch — best for peak.'},
+    {id:'hammer-curl',     name:'Hammer Curl',               sets:3, reps:'12–15', rest:'90 sec',  inc:2.5, cue:'Adds brachialis thickness. Neutral grip.'},
+  ]},
+  { day:'Thursday', label:'LEGS — Secondary',           color:'#22c55e', focus:'Hamstring dominant + quad detail', note:'Two leg sessions closes the upper/lower imbalance.', exercises:[
+    {id:'rdl-thu',         name:'Romanian Deadlift',         sets:4, reps:'8–10',  rest:'2.5 min', inc:5,   cue:'Lead movement today. Heavy. Full hamstring stretch.'},
+    {id:'leg-curl-l',      name:'Leg Curl (Lying)',          sets:4, reps:'10–12', rest:'90 sec',  inc:2.5, cue:'Full extension, explosive curl, slow negative.'},
+    {id:'hack-squat',      name:'Hack Squat / Leg Press',    sets:4, reps:'10–15', rest:'2 min',   inc:10,  cue:'Feet low and narrow for quad sweep.'},
+    {id:'lunge',           name:'Walking Lunge',             sets:3, reps:'12–16', rest:'90 sec',  inc:2.5, cue:'Long stride, back knee nearly touches.'},
+    {id:'leg-ext',         name:'Leg Extension',             sets:3, reps:'15–20', rest:'60 sec',  inc:5,   cue:'Full extension, 2-sec hold at top.'},
+    {id:'calf-se-thu',     name:'Seated Calf Raise',         sets:4, reps:'15–20', rest:'60 sec',  inc:5,   cue:'Soleus focus. Slow reps, full range.'},
+    {id:'calf-st-thu',     name:'Standing Calf Raise',       sets:4, reps:'12–15', rest:'60 sec',  inc:5,   cue:'Load heavy. Calves are stubborn.'},
+  ]},
+  { day:'Friday',   label:'PUSH/PULL — Shoulders & Arms', color:'#a855f7', focus:'Lateral delts, rear delts, arms', note:'Arms solid — maintain. Focus on lateral delt volume.', exercises:[
+    {id:'db-ohp',          name:'Seated DB Shoulder Press',  sets:4, reps:'8–10',  rest:'2.5 min', inc:2.5, cue:'Strict seated. Press with delt not tricep.'},
+    {id:'cable-lat-fri',   name:'Cable Lateral Raise',       sets:4, reps:'15–20', rest:'30 sec',  inc:2.5, cue:'Superset L+R. Constant tension.'},
+    {id:'bent-lat',        name:'Bent-Over Lateral Raise',   sets:4, reps:'15–20', rest:'60 sec',  inc:2.5, cue:'Torso parallel. Lead with elbows.'},
+    {id:'ez-curl',         name:'EZ Bar Curl',               sets:4, reps:'8–10',  rest:'2 min',   inc:2.5, cue:'Full supination at top, full stretch at bottom.'},
+    {id:'cable-curl-hi',   name:'Cable Curl (High Pulley)',  sets:3, reps:'12–15', rest:'90 sec',  inc:2.5, cue:'Arms out to sides. Curl toward ears.'},
+    {id:'cgbp',            name:'Close-Grip Bench Press',    sets:4, reps:'8–10',  rest:'2 min',   inc:5,   cue:'Hands shoulder-width. Full ROM.'},
+    {id:'skull',           name:'Skull Crusher',             sets:3, reps:'10–12', rest:'90 sec',  inc:2.5, cue:'Bar to forehead. Full extension.'},
+    {id:'wrist-curl',      name:'Wrist / Reverse Curl',      sets:2, reps:'15–20', rest:'60 sec',  inc:2.5, cue:'Forearms — maintenance.'},
+  ]},
+];
+
+var SLIDERS = [
+  {id:'energy',    label:'ENERGY LEVEL',        color:'#f97316', def:7},
+  {id:'sleep',     label:'SLEEP QUALITY',        color:'#3b82f6', def:7},
+  {id:'training',  label:'TRAINING QUALITY',     color:'#22c55e', def:7},
+  {id:'hunger',    label:'HUNGER LEVEL',         color:'#eab308', def:5},
+  {id:'adherence', label:'MEAL PLAN ADHERENCE',  color:'#a855f7', def:7},
+];
+
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+var currentScreen = 'checkin';
+var currentDay = 0;
+var openExercise = null;
+var loggingExercise = null;
+var setInputData = {};
+var editingSet = {}; // {exId: setIndex} tracking which set is being edited
+var restTimerInterval = null;
+var restTimerSeconds = 0;
+var restTimerRunning = false;
+var restTimerExId = null;
+var checkins = [];
+var trainingLogs = {};
+
+// ═══════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════
+var CI_KEY = 'catalyst_checkins_v1';
+var TR_KEY = 'catalyst_training_v1';
+
+function loadData() {
+  try { var c = localStorage.getItem(CI_KEY); if (c) checkins = JSON.parse(c); } catch(e){}
+  try { var t = localStorage.getItem(TR_KEY); if (t) trainingLogs = JSON.parse(t); } catch(e){}
+}
+function saveCheckins() { try { localStorage.setItem(CI_KEY, JSON.stringify(checkins)); } catch(e){} }
+function saveTraining() { try { localStorage.setItem(TR_KEY, JSON.stringify(trainingLogs)); } catch(e){} }
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+function parseRepRange(reps) {
+  var m = reps.match(/(\d+)[–\-](\d+)/);
+  if (m) return {min:parseInt(m[1]), max:parseInt(m[2])};
+  var s = reps.match(/(\d+)/);
+  if (s) { var n=parseInt(s[1]); return {min:n,max:n}; }
+  return {min:8,max:12};
+}
+
+function calcRec(history, ex) {
+  if (!history || !history.length) return {weight:null, note:'First session — start with a weight you can control for all sets.', pr:false};
+  
+  // Detect PR — highest weight ever lifted for this exercise
+  var allWeights = [];
+  history.forEach(function(sess){ (sess.sets||[]).forEach(function(s){ if(s.weight) allWeights.push(s.weight); }); });
+  var prWeight = allWeights.length ? Math.max.apply(null, allWeights) : 0;
+  var range = parseRepRange(ex.reps);
+  var last = history[history.length-1];
+  var prev = history.length > 1 ? history[history.length-2] : null;
+  var lastSets = last.sets || [];
+  if (!lastSets.length) return {weight:null, note:'No sets recorded last time.'};
+  var avgR = lastSets.reduce(function(a,s){return a+(s.reps||0);},0)/lastSets.length;
+  var lastW = lastSets[0].weight || 0;
+  var hitTop = avgR >= range.max;
+  var hitTopPrev = prev && (prev.sets||[]).length > 0 && (prev.sets.reduce(function(a,s){return a+s.reps;},0)/prev.sets.length) >= range.max;
+  var recW = lastW;
+  var note = '';
+  var isPR = false;
+  if (hitTop && hitTopPrev) { recW = lastW + ex.inc; note = 'Hit top range 2 sessions — increase to ' + recW + 'kg. Next milestone.'; isPR = (recW > prWeight); }
+  else if (hitTop) { note = 'Hit top range — hold ' + lastW + 'kg. One more session then increase.'; }
+  else if (avgR >= range.min) { note = 'Within range (avg ' + avgR.toFixed(1) + ' reps) — hold ' + lastW + 'kg. Focus on quality.'; }
+  else { recW = Math.max(0, lastW - ex.inc); note = 'Below range (avg ' + avgR.toFixed(1) + ') — reduce to ' + recW + 'kg. Rebuild with control.'; }
+  return {weight:recW, avgR:avgR.toFixed(1), lastW:lastW, note:note, pr:isPR, prWeight:prWeight};
+}
+
+function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+// ═══════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════
+function showScreen(name) {
+  currentScreen = name;
+  ['checkin','training','history','analysis','nutrition'].forEach(function(s){
+    var sc = document.getElementById('screen-'+s);
+    var nb = document.getElementById('nav-'+s);
+    if (sc) sc.classList.remove('active');
+    if (nb) nb.classList.remove('active');
+  });
+  var scEl = document.getElementById('screen-'+name);
+  var nbEl = document.getElementById('nav-'+name);
+  if (scEl) scEl.classList.add('active');
+  if (nbEl) nbEl.classList.add('active');
+  updateHeader();
+  if (name === 'training') renderTraining();
+  if (name === 'history') renderHistory();
+  if (name === 'analysis') renderAnalysis();
+  if (name === 'nutrition') renderNutrition();
+  document.getElementById('content').scrollTop = 0;
+}
+
+// ═══════════════════════════════════
+// HEADER
+// ═══════════════════════════════════
+function updateHeader() {
+  var subNav = document.getElementById('sub-nav');
+  var hRight = document.getElementById('header-right');
+  subNav.innerHTML = '';
+  if (currentScreen === 'training') {
+    PROGRAM.forEach(function(d, i) {
+      var hasLogs = d.exercises.some(function(ex){ return (trainingLogs[ex.id]||[]).length > 0; });
+      var btn = document.createElement('button');
+      btn.style.cssText = 'padding:8px 13px;border:none;cursor:pointer;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;background:transparent;white-space:nowrap;transition:all .15s;position:relative;border-bottom:2px solid transparent;';
+      btn.style.color = i===currentDay ? d.color : '#555';
+      btn.style.borderBottomColor = i===currentDay ? d.color : 'transparent';
+      btn.textContent = d.day.slice(0,3).toUpperCase();
+      if (hasLogs) {
+        var dot = document.createElement('span');
+        dot.style.cssText = 'position:absolute;top:4px;right:2px;width:6px;height:6px;border-radius:50%;background:'+d.color+';border:1.5px solid #080a0e;';
+        btn.appendChild(dot);
+      }
+      btn.onclick = function(){ currentDay=i; openExercise=null; loggingExercise=null; renderTraining(); updateHeader(); };
+      subNav.appendChild(btn);
+    });
+  } else if (currentScreen === 'analysis') {
+    var latest = checkins[checkins.length-1];
+    if (latest) {
+      hRight.innerHTML = '<div style="font-size:18px;font-weight:700;color:#22c55e;font-family:Cabinet Grotesk,sans-serif">'+latest.weight+'kg</div>';
+    }
+  } else {
+    hRight.innerHTML = '';
+    if (checkins.length && currentScreen !== 'checkin') {
+      var l = checkins[checkins.length-1];
+      var s = checkins[0];
+      var chg = (l.weight - s.weight).toFixed(1);
+      hRight.innerHTML = '<div style="font-size:18px;font-weight:700;color:#22c55e;font-family:Cabinet Grotesk,sans-serif">'+l.weight+'kg</div><div style="font-size:10px;color:'+(chg>=0?'#22c55e':'#ef4444')+'">'+(chg>=0?'+':'')+chg+'kg</div>';
+    }
+  }
+}
+
+// ═══════════════════════════════════
+// CHECK-IN SCREEN INIT
+// ═══════════════════════════════════
+function initCheckin() {
+  document.getElementById('ci-date').value = todayStr();
+  document.getElementById('ci-weight').addEventListener('input', onWeightInput);
+  var container = document.getElementById('ci-sliders');
+  container.innerHTML = '';
+  SLIDERS.forEach(function(s) {
+    var wrap = document.createElement('div');
+    wrap.style.marginBottom = '16px';
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:6px';
+    var lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:#888;letter-spacing:1px';
+    lbl.textContent = s.label;
+    var valEl = document.createElement('span');
+    valEl.id = 'sv-'+s.id;
+    valEl.style.cssText = 'font-size:13px;font-weight:700;color:'+s.color+';font-family:DM Mono,monospace';
+    valEl.textContent = s.def + '/10';
+    row.appendChild(lbl); row.appendChild(valEl);
+    var inp = document.createElement('input');
+    inp.type='range'; inp.min=1; inp.max=10; inp.value=s.def; inp.id='s-'+s.id;
+    inp.style.accentColor=s.color;
+    inp.style.width='100%';
+    inp.addEventListener('input', (function(sid,scolor){ return function(){ document.getElementById('sv-'+sid).textContent=this.value+'/10'; document.getElementById('sv-'+sid).style.color=scolor; }; })(s.id,s.color));
+    var hints = document.createElement('div');
+    hints.style.cssText = 'display:flex;justify-content:space-between;margin-top:3px;margin-bottom:0';
+    hints.innerHTML = '<span style="font-size:9px;color:#333">Low</span><span style="font-size:9px;color:#333">High</span>';
+    wrap.appendChild(row); wrap.appendChild(inp); wrap.appendChild(hints);
+    container.appendChild(wrap);
+  });
+  updateCheckinWeekLabel();
+}
+
+function updateCheckinWeekLabel() {
+  document.getElementById('checkin-week-label').textContent = 'WEEK ' + (checkins.length+1) + ' · WEIGHT';
+  document.getElementById('header-sub').textContent = 'Week ' + (checkins.length+1) + ' · 140mg Test E/week';
+}
+
+function onWeightInput() {
+  var w = parseFloat(this.value || document.getElementById('ci-weight').value);
+  var btn = document.getElementById('ci-save-btn');
+  var diff = document.getElementById('ci-diff');
+  btn.disabled = isNaN(w);
+  var prev = checkins[checkins.length-1];
+  if (prev && !isNaN(w)) {
+    var d = (w - prev.weight).toFixed(1);
+    diff.textContent = 'vs last week ' + prev.weight + 'kg: ' + (d>=0?'+':'') + d + 'kg';
+    diff.style.color = d>=0 ? '#22c55e' : '#ef4444';
+  } else { diff.textContent = ''; }
+}
+
+function saveCheckin() {
+  var w = parseFloat(document.getElementById('ci-weight').value);
+  if (isNaN(w)) return;
+  var entry = {
+    weight:w, date:document.getElementById('ci-date').value,
+    notes:document.getElementById('ci-notes').value,
+    week:checkins.length+1, timestamp:Date.now()
+  };
+  SLIDERS.forEach(function(s){ entry[s.id] = parseInt(document.getElementById('s-'+s.id).value); });
+  checkins.push(entry);
+  saveCheckins();
+  // Reset
+  document.getElementById('ci-weight').value='';
+  document.getElementById('ci-notes').value='';
+  document.getElementById('ci-diff').textContent='';
+  document.getElementById('ci-save-btn').disabled=true;
+  SLIDERS.forEach(function(s){ document.getElementById('s-'+s.id).value=s.def; document.getElementById('sv-'+s.id).textContent=s.def+'/10'; });
+  updateCheckinWeekLabel();
+  showScreen('analysis');
+}
+
+
+// ═══════════════════════════════════
+// REST TIMER
+// ═══════════════════════════════════
+function parseRestSeconds(restStr) {
+  if (!restStr) return 90;
+  var s = restStr.toLowerCase();
+  if (s.indexOf('3 min') !== -1) return 180;
+  if (s.indexOf('2.5 min') !== -1) return 150;
+  if (s.indexOf('2 min') !== -1) return 120;
+  if (s.indexOf('90 sec') !== -1) return 90;
+  if (s.indexOf('60 sec') !== -1) return 60;
+  if (s.indexOf('30 sec') !== -1) return 30;
+  var minMatch = s.match(/(\d+\.?\d*)\s*min/);
+  if (minMatch) return Math.round(parseFloat(minMatch[1]) * 60);
+  var secMatch = s.match(/(\d+)\s*sec/);
+  if (secMatch) return parseInt(secMatch[1]);
+  return 90;
+}
+
+// Persistent AudioContext — unlocked on first user tap (iOS Safari requirement)
+var _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
+  return _audioCtx;
+}
+
+// Unlock audio on very first tap anywhere — iOS Safari requires this
+document.addEventListener('touchstart', function unlockAudio() {
+  var ctx = getAudioCtx();
+  if (ctx) {
+    // Play a silent buffer to unlock
+    var buf = ctx.createBuffer(1, 1, 22050);
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    ctx.resume();
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+}, {once: true, passive: true});
+
+function playBeeps() {
+  try {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    // Resume in case suspended (iOS)
+    var doBeep = function() {
+      function beep(startTime, freq, dur) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.4, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+        osc.start(startTime);
+        osc.stop(startTime + dur);
+      }
+      beep(ctx.currentTime,        880, 0.2);
+      beep(ctx.currentTime + 0.32, 880, 0.2);
+    };
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(doBeep);
+    } else {
+      doBeep();
+    }
+  } catch(e) {}
+}
+
+function startRestTimer(exId, seconds) {
+  // Stop any existing timer
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  restTimerExId = exId;
+  restTimerSeconds = seconds;
+  restTimerRunning = true;
+  updateTimerBtn(exId, seconds);
+  restTimerInterval = setInterval(function() {
+    restTimerSeconds--;
+    if (restTimerSeconds <= 0) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+      restTimerRunning = false;
+      restTimerExId = null;
+      // Vibrate if supported
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      // Two beeps via Web Audio API
+      playBeeps();
+      updateTimerBtn(exId, 0);
+    } else {
+      updateTimerBtn(exId, restTimerSeconds);
+    }
+  }, 1000);
+}
+
+function stopRestTimer() {
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  restTimerRunning = false;
+  var exId = restTimerExId;
+  restTimerExId = null;
+  restTimerSeconds = 0;
+  if (exId) updateTimerBtn(exId, -1);
+}
+
+function updateTimerBtn(exId, secs) {
+  var btn = document.getElementById('timer-btn-' + exId);
+  if (!btn) return;
+  if (secs === -1) {
+    // Reset state
+    btn.textContent = '⏱ Start Rest Timer';
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.color = '#aaa';
+    btn.style.border = '1px solid rgba(255,255,255,0.1)';
+    return;
+  }
+  if (secs === 0) {
+    btn.textContent = '✅ Rest Complete — GO!';
+    btn.style.background = 'rgba(34,197,94,0.2)';
+    btn.style.color = '#22c55e';
+    btn.style.border = '1px solid rgba(34,197,94,0.4)';
+    return;
+  }
+  var mins = Math.floor(secs / 60);
+  var s = secs % 60;
+  var timeStr = mins > 0 ? mins + ':' + (s < 10 ? '0' : '') + s : s + 's';
+  // Color shifts red as time runs low
+  var pct = secs / parseRestSeconds(null);
+  var color = secs <= 10 ? '#ef4444' : secs <= 30 ? '#f97316' : '#3b82f6';
+  btn.textContent = '⏱ ' + timeStr;
+  btn.style.background = color + '20';
+  btn.style.color = color;
+  btn.style.border = '1px solid ' + color + '40';
+}
+
+// ═══════════════════════════════════
+// TRAINING SCREEN
+// ═══════════════════════════════════
+function renderTraining() {
+  var d = PROGRAM[currentDay];
+  var container = document.getElementById('training-content');
+  container.innerHTML = '';
+
+  // Day info card
+  var infoCard = document.createElement('div');
+  infoCard.className = 'card';
+  infoCard.style.borderColor = d.color+'40';
+  infoCard.innerHTML = '<div style="font-size:9px;color:'+d.color+';letter-spacing:2px;margin-bottom:4px">'+d.day.toUpperCase()+'</div>'
+    +'<div style="font-family:Cabinet Grotesk,sans-serif;font-size:18px;font-weight:900;margin-bottom:4px">'+d.label+'</div>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:10px">'+d.focus+'</div>'
+    +'<div style="padding:8px 12px;background:'+d.color+'15;border-radius:8px;font-size:11px;color:'+d.color+';line-height:1.7">'+d.note+'</div>';
+  container.appendChild(infoCard);
+
+  // Exercise cards
+  d.exercises.forEach(function(ex) {
+    container.appendChild(buildExCard(ex, d.color));
+  });
+}
+
+function buildExCard(ex, color) {
+  var history = trainingLogs[ex.id] || [];
+  var rec = calcRec(history, ex);
+  var last = history[history.length-1];
+  var isOpen = openExercise === ex.id;
+  var isLogging = loggingExercise === ex.id;
+
+  var card = document.createElement('div');
+  card.className = 'ex-card';
+  card.style.borderColor = isOpen ? color+'40' : 'rgba(255,255,255,.06)';
+
+  // Header
+  var hdr = document.createElement('div');
+  hdr.className = 'ex-header';
+  hdr.onclick = function() {
+    openExercise = isOpen ? null : ex.id;
+    if (!isOpen) loggingExercise = null;
+    renderTraining();
+  };
+  var nameWrap = document.createElement('div');
+  nameWrap.style.flex = '1';
+  nameWrap.innerHTML = '<div class="ex-name">'+esc(ex.name)+'</div><div class="ex-meta">'+ex.sets+' sets · '+ex.reps+' reps · '+ex.rest+'</div>';
+  var badges = document.createElement('div');
+  badges.style.cssText = 'display:flex;gap:6px;align-items:center;flex-shrink:0';
+  if (history.length > 0) badges.innerHTML += '<span style="font-size:9px;background:rgba(34,197,94,.1);color:#22c55e;padding:2px 8px;border-radius:99px;border:1px solid rgba(34,197,94,.2)">✓</span>';
+  if (rec.pr) badges.innerHTML += '<span style="font-size:9px;background:rgba(255,215,0,.15);color:#ffd700;padding:2px 8px;border-radius:99px;border:1px solid rgba(255,215,0,.4);font-weight:700">🏆 PR</span>';
+  if (rec.weight) badges.innerHTML += '<span style="font-size:10px;color:'+color+';font-family:DM Mono,monospace">'+rec.weight+'kg</span>';
+  badges.innerHTML += '<span style="color:#444;font-size:11px">'+(isOpen?'▲':'▼')+'</span>';
+  hdr.appendChild(nameWrap); hdr.appendChild(badges);
+  card.appendChild(hdr);
+
+  if (isOpen) {
+    var body = document.createElement('div');
+    body.className = 'ex-body';
+    body.style.paddingTop = '14px';
+
+    // Recommendation box
+    var recBox = document.createElement('div');
+    recBox.className = 'target-box';
+    recBox.style.background = color+'12';
+    recBox.style.border = '1px solid '+color+'30';
+    if (history.length > 0) {
+      recBox.innerHTML = '<div style="font-size:9px;color:'+color+';letter-spacing:2px;margin-bottom:10px">TODAY\'S TARGET</div>'
+        +'<div style="display:flex;gap:20px;margin-bottom:10px">'
+        +'<div class="target-stat"><div class="val">'+rec.weight+'kg</div><div class="lbl">TARGET</div></div>'
+        +'<div class="target-stat"><div class="val">'+ex.reps+'</div><div class="lbl">REPS</div></div>'
+        +(rec.avgR?'<div class="target-stat"><div class="val" style="color:#aaa">'+rec.avgR+'</div><div class="lbl">LAST AVG</div></div>':'')
+        +'</div>'
+        +'<div style="font-size:11px;color:#888;line-height:1.7">'+esc(rec.note)+'</div>'
+        +(rec.pr?'<div style="margin-top:8px;padding:6px 10px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;font-size:11px;color:#ffd700;font-weight:700">&#127942; NEW PR INCOMING &mdash; Target: '+rec.weight+'kg</div>':'');
+    } else {
+      recBox.innerHTML = '<div style="font-size:11px;color:#666;line-height:1.7">'+esc(rec.note)+'</div>';
+    }
+    body.appendChild(recBox);
+
+    // Last session — with edit option if logged today
+    if (last && last.sets) {
+      var lastDiv = document.createElement('div');
+      lastDiv.style.marginBottom = '14px';
+      var isToday = last.date === todayStr();
+      lastDiv.innerHTML = '<div class="section-title" style="margin-bottom:8px">LAST SESSION — '+last.date+(isToday?' <span style="color:#22c55e;font-size:9px">(TODAY)</span>':'')+'</div>';
+      var setsRow = document.createElement('div');
+      setsRow.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+      last.sets.forEach(function(s, si) {
+        var setWrap = document.createElement('div');
+        setWrap.style.cssText = 'display:flex;align-items:center;gap:8px';
+        var editKey = ex.id + '_' + si;
+        var isEditingThisSet = editingSet[editKey];
+        if (isEditingThisSet && isToday) {
+          // Edit mode for this set
+          var eWrap = document.createElement('div');
+          eWrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex:1';
+          var setLbl = document.createElement('div');
+          setLbl.style.cssText = 'font-size:10px;color:#555;width:36px;flex-shrink:0';
+          setLbl.textContent = 'Set '+(si+1);
+          var wInp = document.createElement('input');
+          wInp.type='number'; wInp.step='0.5'; wInp.value=s.weight;
+          wInp.style.cssText='padding:6px 8px;font-size:13px;font-weight:700;font-family:Cabinet Grotesk,sans-serif;width:80px;flex-shrink:0';
+          var wLbl = document.createElement('span');
+          wLbl.style.cssText='font-size:10px;color:#555';
+          wLbl.textContent='kg';
+          var rInp = document.createElement('input');
+          rInp.type='number'; rInp.value=s.reps;
+          rInp.style.cssText='padding:6px 8px;font-size:13px;font-weight:700;font-family:Cabinet Grotesk,sans-serif;width:70px;flex-shrink:0';
+          var rLbl = document.createElement('span');
+          rLbl.style.cssText='font-size:10px;color:#555';
+          rLbl.textContent='reps';
+          var saveEditBtn = document.createElement('button');
+          saveEditBtn.style.cssText='padding:6px 12px;border-radius:8px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#22c55e;font-size:11px;font-family:DM Mono,monospace;cursor:pointer;flex-shrink:0';
+          saveEditBtn.textContent='✓ Save';
+          saveEditBtn.onclick = (function(eid, sidx, winp, rinp) { return function(e) {
+            e.stopPropagation();
+            var newW = parseFloat(winp.value);
+            var newR = parseInt(rinp.value);
+            if (isNaN(newW) || isNaN(newR)) return;
+            var hist = trainingLogs[eid];
+            var lastEntry = hist[hist.length-1];
+            lastEntry.sets[sidx] = {weight:newW, reps:newR};
+            saveTraining();
+            delete editingSet[eid+'_'+sidx];
+            renderTraining();
+          }; })(ex.id, si, wInp, rInp);
+          var cancelEditBtn = document.createElement('button');
+          cancelEditBtn.style.cssText='padding:6px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:#666;font-size:11px;font-family:DM Mono,monospace;cursor:pointer;flex-shrink:0';
+          cancelEditBtn.textContent='✕';
+          cancelEditBtn.onclick = (function(eid, sidx) { return function(e) {
+            e.stopPropagation();
+            delete editingSet[eid+'_'+sidx];
+            renderTraining();
+          }; })(ex.id, si);
+          eWrap.appendChild(setLbl); eWrap.appendChild(wInp); eWrap.appendChild(wLbl);
+          eWrap.appendChild(rInp); eWrap.appendChild(rLbl);
+          eWrap.appendChild(saveEditBtn); eWrap.appendChild(cancelEditBtn);
+          setWrap.appendChild(eWrap);
+        } else {
+          // Display mode
+          var pill = document.createElement('div');
+          pill.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;text-align:center;min-width:70px';
+          pill.innerHTML = '<div style="font-size:11px;font-weight:700;font-family:Cabinet Grotesk,sans-serif;color:#fff">'+s.weight+'kg×'+s.reps+'</div><div style="font-size:9px;color:#444;margin-top:2px">Set '+(si+1)+'</div>';
+          setWrap.appendChild(pill);
+          if (isToday) {
+            var editBtn = document.createElement('button');
+            editBtn.style.cssText='padding:4px 10px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#666;font-size:10px;font-family:DM Mono,monospace;cursor:pointer';
+            editBtn.textContent='✏️ Edit';
+            editBtn.onclick = (function(eid, sidx) { return function(e) {
+              e.stopPropagation();
+              editingSet[eid+'_'+sidx] = true;
+              renderTraining();
+            }; })(ex.id, si);
+            setWrap.appendChild(editBtn);
+          }
+        }
+        setsRow.appendChild(setWrap);
+      });
+      lastDiv.appendChild(setsRow);
+      body.appendChild(lastDiv);
+    }
+
+    // Cue
+    var cueDiv = document.createElement('div');
+    cueDiv.style.cssText = 'margin-bottom:14px;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:8px';
+    cueDiv.innerHTML = '<div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:4px">COACHING CUE</div><div style="font-size:11px;color:#777;line-height:1.7">'+esc(ex.cue)+'</div>';
+    body.appendChild(cueDiv);
+
+    // Log button or set inputs
+    if (!isLogging) {
+      // Rest timer button
+      var timerBtn = document.createElement('button');
+      timerBtn.id = 'timer-btn-' + ex.id;
+      var isThisTimerRunning = restTimerRunning && restTimerExId === ex.id;
+      var restSecs = parseRestSeconds(ex.rest);
+      timerBtn.style.cssText = 'width:100%;padding:13px;border-radius:10px;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700;letter-spacing:.3px;margin-bottom:10px;transition:all .3s;';
+      if (isThisTimerRunning) {
+        var mins = Math.floor(restTimerSeconds/60), secs = restTimerSeconds%60;
+        timerBtn.textContent = '⏱ ' + (mins>0?mins+':'+(secs<10?'0':'')+secs:secs+'s');
+        timerBtn.style.background = 'rgba(59,130,246,0.2)';
+        timerBtn.style.color = '#3b82f6';
+        timerBtn.style.border = '1px solid rgba(59,130,246,0.4)';
+      } else if (restTimerExId === ex.id && restTimerSeconds === 0) {
+        timerBtn.textContent = '✅ Rest Complete — GO!';
+        timerBtn.style.background = 'rgba(34,197,94,0.2)';
+        timerBtn.style.color = '#22c55e';
+        timerBtn.style.border = '1px solid rgba(34,197,94,0.4)';
+      } else {
+        timerBtn.textContent = '⏱ Rest Timer — ' + ex.rest;
+        timerBtn.style.background = 'rgba(255,255,255,0.05)';
+        timerBtn.style.color = '#aaa';
+        timerBtn.style.border = '1px solid rgba(255,255,255,0.1)';
+      }
+      timerBtn.onclick = (function(eid, rsecs) { return function(e) {
+        e.stopPropagation();
+        if (restTimerRunning && restTimerExId === eid) {
+          stopRestTimer();
+        } else {
+          startRestTimer(eid, rsecs);
+        }
+      }; })(ex.id, restSecs);
+      body.appendChild(timerBtn);
+
+      var logBtn = document.createElement('button');
+      logBtn.style.cssText = 'width:100%;padding:13px;border-radius:10px;background:'+color+';color:#000;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700;letter-spacing:.3px';
+      logBtn.textContent = '+ Log This Session';
+      logBtn.onclick = function(e) {
+        e.stopPropagation();
+        loggingExercise = ex.id;
+        // Pre-fill weights
+        setInputData = {};
+        for (var i=0; i<ex.sets; i++) {
+          setInputData[i] = {weight: rec.weight || '', reps: ''};
+        }
+        renderTraining();
+      };
+      body.appendChild(logBtn);
+    } else {
+      var logForm = document.createElement('div');
+      logForm.innerHTML = '<div class="section-title" style="margin-bottom:10px">LOG SETS — '+todayStr()+'</div>';
+      if (rec.weight) logForm.innerHTML += '<div style="font-size:11px;color:'+color+';margin-bottom:12px">Target '+rec.weight+'kg pre-filled</div>';
+      for (var i=0; i<ex.sets; i++) {
+        (function(setIdx) {
+          var row = document.createElement('div');
+          row.className = 'set-row';
+          var num = document.createElement('div');
+          num.className = 'set-num';
+          num.textContent = setIdx+1;
+          var wrapW = document.createElement('div');
+          wrapW.style.flex='1';
+          var wInp = document.createElement('input');
+          wInp.type='number'; wInp.step='0.5'; wInp.placeholder='kg'; wInp.className='input-sm';
+          wInp.value = (setInputData[setIdx]&&setInputData[setIdx].weight) || '';
+          wInp.addEventListener('input', function(){ if(!setInputData[setIdx]) setInputData[setIdx]={}; setInputData[setIdx].weight=parseFloat(this.value)||''; });
+          var wLbl = document.createElement('div');
+          wLbl.style.cssText='font-size:9px;color:#444;margin-top:2px;font-family:DM Mono,monospace';
+          wLbl.textContent='WEIGHT (kg)';
+          wrapW.appendChild(wInp); wrapW.appendChild(wLbl);
+          var wrapR = document.createElement('div');
+          wrapR.style.flex='1';
+          var rInp = document.createElement('input');
+          rInp.type='number'; rInp.placeholder='reps'; rInp.className='input-sm';
+          rInp.value = (setInputData[setIdx]&&setInputData[setIdx].reps) || '';
+          rInp.addEventListener('input', function(){ if(!setInputData[setIdx]) setInputData[setIdx]={}; setInputData[setIdx].reps=parseInt(this.value)||''; });
+          var rLbl = document.createElement('div');
+          rLbl.style.cssText='font-size:9px;color:#444;margin-top:2px;font-family:DM Mono,monospace';
+          rLbl.textContent='REPS';
+          wrapR.appendChild(rInp); wrapR.appendChild(rLbl);
+          row.appendChild(num); row.appendChild(wrapW); row.appendChild(wrapR);
+          logForm.appendChild(row);
+        })(i);
+      }
+      var btnRow = document.createElement('div');
+      btnRow.style.cssText='display:flex;gap:8px;margin-top:14px';
+      var saveBtn = document.createElement('button');
+      saveBtn.style.cssText='flex:1;padding:13px;border-radius:10px;background:'+color+';color:#000;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700';
+      saveBtn.textContent='Save Session';
+      saveBtn.onclick = function(e) {
+        e.stopPropagation();
+        var filledSets = [];
+        for (var i=0; i<ex.sets; i++) {
+          var sd = setInputData[i];
+          if (sd && sd.weight !== '' && sd.reps !== '') filledSets.push({weight:sd.weight, reps:sd.reps});
+        }
+        if (!filledSets.length) return;
+        // Check for PR before saving
+        var existingHistory = trainingLogs[ex.id] || [];
+        var allPrevWeights = [];
+        existingHistory.forEach(function(sess){ (sess.sets||[]).forEach(function(s){ if(s.weight) allPrevWeights.push(s.weight); }); });
+        var prevPR = allPrevWeights.length ? Math.max.apply(null, allPrevWeights) : 0;
+        var newMaxWeight = Math.max.apply(null, filledSets.map(function(s){return s.weight||0;}));
+        var isNewPR = newMaxWeight > prevPR;
+        if (!trainingLogs[ex.id]) trainingLogs[ex.id] = [];
+        trainingLogs[ex.id].push({date:todayStr(), sets:filledSets, pr:isNewPR});
+        if (isNewPR) { alert('🏆 NEW PR! ' + newMaxWeight + 'kg on ' + ex.name + ' — new personal record!'); }
+        saveTraining();
+        loggingExercise = null;
+        setInputData = {};
+        renderTraining();
+        updateHeader();
+      };
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className='btn-outline';
+      cancelBtn.textContent='Cancel';
+      cancelBtn.onclick = function(e){ e.stopPropagation(); loggingExercise=null; renderTraining(); };
+      btnRow.appendChild(saveBtn); btnRow.appendChild(cancelBtn);
+      logForm.appendChild(btnRow);
+
+      // Timer button in logging mode
+      var timerBtn2 = document.createElement('button');
+      timerBtn2.id = 'timer-btn-' + ex.id;
+      var isRunning2 = restTimerRunning && restTimerExId === ex.id;
+      timerBtn2.style.cssText = 'width:100%;padding:13px;border-radius:10px;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700;margin-top:10px;transition:all .3s;';
+      if (isRunning2) {
+        var mins2=Math.floor(restTimerSeconds/60), secs2=restTimerSeconds%60;
+        timerBtn2.textContent = '⏱ ' + (mins2>0?mins2+':'+(secs2<10?'0':'')+secs2:secs2+'s') + ' — tap to cancel';
+        timerBtn2.style.cssText += 'background:rgba(59,130,246,0.2);color:#3b82f6;border:1px solid rgba(59,130,246,0.4)';
+      } else {
+        timerBtn2.textContent = '⏱ Start Rest — ' + ex.rest;
+        timerBtn2.style.cssText += 'background:rgba(255,255,255,0.05);color:#aaa;border:1px solid rgba(255,255,255,0.1)';
+      }
+      timerBtn2.onclick = (function(eid, rsecs){ return function(e){
+        e.stopPropagation();
+        if (restTimerRunning && restTimerExId===eid) stopRestTimer();
+        else startRestTimer(eid, rsecs);
+      }; })(ex.id, parseRestSeconds(ex.rest));
+      logForm.appendChild(timerBtn2);
+
+      body.appendChild(logForm);
+    }
+    card.appendChild(body);
+  }
+  return card;
+}
+
+// ═══════════════════════════════════
+// HISTORY SCREEN
+// ═══════════════════════════════════
+function renderHistory() {
+  var c = document.getElementById('history-content');
+  c.innerHTML = '';
+  var hasAny = Object.keys(trainingLogs).some(function(k){ return trainingLogs[k].length>0; }) || checkins.length > 0;
+  if (!hasAny) {
+    c.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#444"><div style="font-size:32px;margin-bottom:12px">📊</div><div style="font-size:12px">No data yet. Log a session or complete a check-in.</div></div>';
+    return;
+  }
+
+  // Weight trend
+  if (checkins.length > 0) {
+    var wCard = document.createElement('div');
+    wCard.className = 'card';
+    wCard.innerHTML = '<div class="section-title">WEIGHT TREND</div>';
+    var svg = buildWeightChart();
+    wCard.appendChild(svg);
+    c.appendChild(wCard);
+
+    // Stats
+    var latest = checkins[checkins.length-1];
+    var first = checkins[0];
+    var chg = (latest.weight-first.weight).toFixed(1);
+    var grid = document.createElement('div');
+    grid.className = 'stat-grid';
+    grid.innerHTML = '<div class="stat-card"><div class="stat-lbl">CURRENT</div><div class="stat-val" style="color:#22c55e">'+latest.weight+'kg</div></div>'
+      +'<div class="stat-card"><div class="stat-lbl">CHANGE</div><div class="stat-val" style="color:'+(chg>=0?'#22c55e':'#ef4444')+'">'+(chg>=0?'+':'')+chg+'kg</div></div>'
+      +'<div class="stat-card"><div class="stat-lbl">WEEKS</div><div class="stat-val" style="color:#3b82f6">'+checkins.length+'</div></div>';
+    c.insertBefore(grid, wCard);
+  }
+
+  // Training history
+  var hasTraining = Object.keys(trainingLogs).some(function(k){ return trainingLogs[k].length>0; });
+  if (hasTraining) {
+    var tTitle = document.createElement('div');
+    tTitle.className = 'section-title';
+    tTitle.style.marginTop = '20px';
+    tTitle.textContent = 'TRAINING HISTORY';
+    c.appendChild(tTitle);
+
+    PROGRAM.forEach(function(d) {
+      var loggedEx = d.exercises.filter(function(ex){ return (trainingLogs[ex.id]||[]).length>0; });
+      if (!loggedEx.length) return;
+      var dayDiv = document.createElement('div');
+      dayDiv.style.marginBottom = '20px';
+      dayDiv.innerHTML = '<div style="font-size:10px;color:'+d.color+';letter-spacing:2px;margin-bottom:10px">'+d.day.toUpperCase()+' — '+d.label+'</div>';
+      loggedEx.forEach(function(ex) {
+        var hist = trainingLogs[ex.id]||[];
+        var rec = calcRec(hist, ex);
+        var exDiv = document.createElement('div');
+        exDiv.style.cssText = 'background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:8px';
+        exDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          +'<div><div style="font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700">'+esc(ex.name)+'</div>'
+          +'<div style="font-size:10px;color:#555;margin-top:2px">'+hist.length+' session'+(hist.length>1?'s':'')+' logged</div></div>'
+          +(rec.weight?'<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:'+d.color+';font-family:Cabinet Grotesk,sans-serif">'+rec.weight+'kg</div><div style="font-size:9px;color:#555">NEXT TARGET</div></div>':'')
+          +'</div>';
+        var miniRow = document.createElement('div');
+        miniRow.style.cssText = 'display:flex;gap:6px;overflow-x:auto';
+        hist.slice(-6).forEach(function(sess) {
+          var rng = parseRepRange(ex.reps);
+          var avg = sess.sets.reduce(function(a,s){return a+s.reps;},0)/sess.sets.length;
+          var col = avg>=rng.max?'#22c55e':avg>=rng.min?'#eab308':'#ef4444';
+          miniRow.innerHTML += '<div class="mini-bar" style="border:1px solid '+col+'30"><div style="font-size:11px;font-weight:700;font-family:Cabinet Grotesk,sans-serif">'+sess.sets[0].weight+'kg</div><div style="font-size:9px;color:'+col+'">'+avg.toFixed(0)+' reps</div><div style="font-size:8px;color:#444;margin-top:2px">'+sess.date.slice(5)+'</div></div>';
+        });
+        exDiv.appendChild(miniRow);
+        dayDiv.appendChild(exDiv);
+      });
+      c.appendChild(dayDiv);
+    });
+  }
+
+  // Backup
+  var backup = document.createElement('div');
+  backup.className = 'backup-card';
+  backup.innerHTML = '<div class="section-title">BACKUP & RESTORE</div>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:14px;line-height:1.8">Export your data to Notes as a backup. Paste it back here to restore if needed.</div>';
+  var expBtn = document.createElement('button');
+  expBtn.className = 'backup-btn';
+  expBtn.style.cssText = 'width:100%;padding:11px;border-radius:10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#22c55e;font-size:11px;letter-spacing:1px;margin-bottom:8px';
+  expBtn.textContent = '📤 EXPORT & COPY DATA';
+  expBtn.onclick = exportData;
+  var expBox = document.createElement('textarea');
+  expBox.id = 'export-box';
+  expBox.rows = 3;
+  expBox.style.cssText = 'display:none;margin-bottom:8px;font-size:10px;color:#888;background:rgba(0,0,0,.3)';
+  var impBox = document.createElement('textarea');
+  impBox.id = 'import-box';
+  impBox.rows = 3;
+  impBox.placeholder = 'Paste exported data here to restore...';
+  impBox.style.cssText = 'margin-bottom:8px;font-size:10px;color:#888;background:rgba(0,0,0,.3)';
+  var impBtn = document.createElement('button');
+  impBtn.style.cssText = 'width:100%;padding:11px;border-radius:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#3b82f6;font-size:11px;letter-spacing:1px';
+  impBtn.textContent = '📥 RESTORE DATA';
+  impBtn.onclick = importData;
+  backup.appendChild(expBtn); backup.appendChild(expBox); backup.appendChild(impBox); backup.appendChild(impBtn);
+  c.appendChild(backup);
+}
+
+function buildWeightChart() {
+  var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width','100%'); svg.setAttribute('height','160');
+  svg.style.overflow='visible';
+  if (checkins.length < 1) return svg;
+  var W = Math.min(640, window.innerWidth-72);
+  var H=140, PL=32, PR=10, PT=10, PB=24;
+  var iW=W-PL-PR, iH=H-PT-PB;
+  var ws = checkins.map(function(c){return c.weight;});
+  var minW=Math.min.apply(null,ws)-0.5, maxW=Math.max.apply(null,ws)+0.5;
+  var xS=function(i){return PL+(checkins.length>1?(i/(checkins.length-1))*iW:iW/2);};
+  var yS=function(v){return PT+iH-((v-minW)/(maxW-minW))*iH;};
+  var pts=checkins.map(function(c,i){return xS(i).toFixed(1)+','+yS(c.weight).toFixed(1);});
+  var pathD=pts.map(function(p,i){return(i===0?'M':'L')+p;}).join(' ');
+  var areaD=pathD+' L'+xS(checkins.length-1).toFixed(1)+','+(PT+iH)+' L'+PL+','+(PT+iH)+' Z';
+  var baseY=yS(checkins[0].weight).toFixed(1);
+  svg.innerHTML='<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.15"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs>'
+    +'<line x1="'+PL+'" y1="'+baseY+'" x2="'+(PL+iW)+'" y2="'+baseY+'" stroke="#222" stroke-dasharray="3,3" stroke-width="1"/>'
+    +'<path d="'+areaD+'" fill="url(#ag)"/>'
+    +'<path d="'+pathD+'" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  checkins.forEach(function(c,i){
+    var dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',xS(i).toFixed(1)); dot.setAttribute('cy',yS(c.weight).toFixed(1));
+    dot.setAttribute('r','4'); dot.setAttribute('fill','#22c55e');
+    svg.appendChild(dot);
+    if (checkins.length<=8||i%Math.ceil(checkins.length/6)===0||i===checkins.length-1){
+      var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',xS(i).toFixed(1)); t.setAttribute('y',H-4);
+      t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#444');
+      t.setAttribute('font-size','9'); t.setAttribute('font-family','DM Mono,monospace');
+      t.textContent=c.week||i+1; svg.appendChild(t);
+    }
+  });
+  return svg;
+}
+
+// ═══════════════════════════════════
+// ANALYSIS SCREEN
+// ═══════════════════════════════════
+function buildAnalysisData() {
+  var data = checkins;
+  if (!data.length) return null;
+  var latest=data[data.length-1], prev=data.length>1?data[data.length-2]:null, prev2=data.length>2?data[data.length-3]:null;
+  var wk=prev?+(latest.weight-prev.weight).toFixed(2):null;
+  var wk2=prev2?+(latest.weight-prev2.weight).toFixed(2):null;
+
+  var wTxt, newCal=3000, calTxt, macroTxt, flags=[], focusTxt;
+
+  if (wk===null) wTxt='Baseline set at '+latest.weight+'kg. Weigh same time each morning. Analysis begins next week.';
+  else if (wk>0.8) wTxt='Gaining too fast (+'+wk+'kg). Target 0.25-0.5kg/month. Reduce calories.';
+  else if (wk>0.1) wTxt='On track (+'+wk+'kg). Good lean bulk rate. Stay consistent.';
+  else if (wk>=-0.1&&wk2!==null&&Math.abs(wk2)<0.3) wTxt='Stalled 2+ weeks ('+wk2+'kg over 2 weeks). Need more calories to drive growth.';
+  else if (wk>=-0.1) wTxt='Stable this week ('+wk+'kg). Watch the 2-3 week trend before adjusting.';
+  else wTxt='Losing weight ('+wk+'kg) on a bulk. You are in a deficit. Increase calories.';
+
+  if (wk===null) calTxt='MAINTAIN 3,000 kcal. Baseline week.';
+  else if (wk>0.8){newCal=2750;calTxt='DECREASE to 2,750 kcal (−250). Gaining too fast.';}
+  else if (wk>0.1) calTxt='MAINTAIN 3,000 kcal. On track.';
+  else if (wk>=-0.1&&wk2!==null&&Math.abs(wk2)<0.3){newCal=3200;calTxt='INCREASE to 3,200 kcal (+200). Stalled 2 weeks — add via carbs around training.';}
+  else if (wk<-0.1){newCal=3250;calTxt='INCREASE to 3,250 kcal (+250). Losing on a bulk.';}
+  else calTxt='MAINTAIN 3,000 kcal. Early data.';
+
+  var p=220,f=85,carbs=Math.round((newCal-p*4-f*9)/4);
+  macroTxt=newCal!==3000?newCal+' kcal | '+p+'g protein | '+carbs+'g carbs | '+f+'g fat\nAll adjustments via carbs. Protein and fat stay fixed.':'No change: 3,000 kcal | 220g protein | 340g carbs | 85g fat.';
+
+  if (latest.sleep<6) flags.push('🔴 Sleep critically low ('+latest.sleep+'/10). GH releases during sleep — protect it.');
+  else if(latest.sleep<7) flags.push('⚠️ Sleep below optimal ('+latest.sleep+'/10). Aim 7-8hrs.');
+  if (latest.energy<5) flags.push('🔴 Energy very low ('+latest.energy+'/10). Check calories, sleep debt, training volume.');
+  else if(latest.energy<7) flags.push('⚠️ Energy moderate ('+latest.energy+'/10). Review pre-workout meal timing.');
+  if (latest.hunger>8) flags.push('⚠️ High hunger ('+latest.hunger+'/10). Add mid-morning snack.');
+  if (latest.training<6) flags.push('⚠️ Training quality low ('+latest.training+'/10). Do not add volume when recovery is down.');
+  if (latest.adherence<6) flags.push('⚠️ Adherence low ('+latest.adherence+'/10). Hit protein first.');
+  if (!flags.length) flags.push('✅ All markers solid. Keep the consistency.');
+
+  if (latest.adherence<6) focusTxt='Hit 220g protein every single day this week.';
+  else if(latest.sleep<6) focusTxt='Hard screen cut-off at 12:15am. Sleep compounds fast.';
+  else if(wk===null) focusTxt='Weigh every morning, same conditions. Establish your baseline.';
+  else if(newCal>3000) focusTxt='Add '+(newCal-3000)+' kcal through carbs in pre and post workout meals.';
+  else if(newCal<3000) focusTxt='Small calorie cut. Watch scale and energy over 2 weeks.';
+  else focusTxt='Stay consistent. The lean bulk is working.';
+
+  return [
+    {title:'WEIGHT TREND',       color:'#22c55e', body:wTxt},
+    {title:'CALORIE ADJUSTMENT', color:'#f97316', body:calTxt},
+    {title:'MACRO TARGETS',      color:'#a855f7', body:macroTxt},
+    {title:'RECOVERY FLAGS',     color:'#ef4444', body:flags.join('\n')},
+    {title:'THIS WEEK FOCUS',    color:'#06b6d4', body:focusTxt},
+  ];
+}
+
+function renderAnalysis() {
+  var c = document.getElementById('analysis-content');
+  c.innerHTML = '';
+  if (!checkins.length) {
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:#444"><div style="font-size:32px;margin-bottom:12px">🤖</div><div style="font-size:12px">Complete your first check-in to get analysis.</div></div>';
+    return;
+  }
+  var latest=checkins[checkins.length-1];
+  var metaDiv=document.createElement('div');
+  metaDiv.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px';
+  metaDiv.innerHTML='<div><div style="font-size:10px;color:#22c55e;letter-spacing:2px;margin-bottom:2px">// ANALYSIS</div><div style="font-size:10px;color:#444">Week '+latest.week+' · '+latest.date+'</div></div>';
+  c.appendChild(metaDiv);
+  var sects=buildAnalysisData();
+  if (sects) {
+    sects.forEach(function(s) {
+      var div=document.createElement('div');
+      div.className='analysis-section';
+      div.style.border='1px solid '+s.color+'20';
+      div.innerHTML='<div class="analysis-title" style="color:'+s.color+'">'+s.title+'</div><div class="analysis-body">'+esc(s.body)+'</div>';
+      c.appendChild(div);
+    });
+  }
+  var photoCard=document.createElement('div');
+  photoCard.className='info-card';
+  photoCard.style.marginTop='12px';
+  photoCard.innerHTML='<div class="info-title">📸 PHOTO ANALYSIS</div><div class="info-body">Upload a progress photo in Claude chat with your weekly numbers for body composition coaching.</div>';
+  c.appendChild(photoCard);
+}
+
+// ═══════════════════════════════════
+// BACKUP / RESTORE
+// ═══════════════════════════════════
+function exportData() {
+  var data={checkins:checkins, training:trainingLogs};
+  var json=JSON.stringify(data);
+  var box=document.getElementById('export-box');
+  box.value=json; box.style.display='block'; box.select();
+  try{document.execCommand('copy'); alert('Copied! Paste into Notes app to back up.');}
+  catch(e){alert('Select all text in the box below and copy it.');}
+}
+function importData() {
+  var txt=document.getElementById('import-box').value.trim();
+  if (!txt){alert('Paste your exported data first.');return;}
+  try{
+    var d=JSON.parse(txt);
+    if (d.checkins) checkins=d.checkins;
+    if (d.training) trainingLogs=d.training;
+    saveCheckins(); saveTraining();
+    alert('Restored! '+(checkins.length)+' check-ins and '+(Object.keys(trainingLogs).length)+' exercises loaded.');
+    document.getElementById('import-box').value='';
+    showScreen(currentScreen);
+  }catch(e){alert('Invalid data format.');}
+}
+
+
+// ═══════════════════════════════════
+// NUTRITION DATA
+// ═══════════════════════════════════
+var NUT_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var NUT_TYPE_COLOR = {
+  'Breakfast':'#f97316','Mid-Morning':'#eab308','Pre-Workout':'#3b82f6',
+  'Post-Workout':'#22c55e','Dinner':'#ec4899','Late Snack':'#8b5cf6','Lunch':'#06b6d4'
+};
+
+var NUT_BLOCKS = [
+  {id:1, label:'Block 1', weeks:'Weeks 1–2', cal:2200, p:195, c:235, f:68, color:'#ef4444',
+   note:'Reverse diet start from 1,900 cal. Metabolism adjusting. Hit all 5 meals consistently before worrying about exact grams. Protein stays high to protect muscle.'},
+  {id:2, label:'Block 2', weeks:'Weeks 3–4', cal:2500, p:205, c:270, f:75, color:'#f97316',
+   note:'First real step up. You should feel stronger and recovering better. Scale may tick up 0.2-0.4kg as glycogen stores refill — this is not fat.'},
+  {id:3, label:'Block 3', weeks:'Weeks 5–6', cal:2800, p:212, c:315, f:80, color:'#eab308',
+   note:'Approaching maintenance. Training performance should be noticeably better. If gaining more than 0.5kg/week, hold here an extra week before Block 4.'},
+  {id:4, label:'Block 4', weeks:'Week 7+', cal:3100, p:220, c:363, f:85, color:'#22c55e',
+   note:'Lean bulk target. 200-300 cal above maintenance. Target 0.2kg/week gain. If scale stalls 2 weeks, add 150 cal via carbs. All weights are RAW weight.'},
+];
+
+var NUT_PLANS = {
+1:{
+Monday:[
+  {type:'Breakfast',   name:'Eggs & Toast',             desc:'3 whole eggs scrambled, 2 slices wholegrain toast, sliced tomato', cal:420, p:28, c:34, f:18, prep:'8 min'},
+  {type:'Mid-Morning', name:'Protein Shake',            desc:'1.5 scoops whey in 300ml water, 1 banana', cal:290, p:36, c:28, f:3, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice (small)',   desc:'150g chicken breast (raw), 1 cup white rice, soy sauce', cal:440, p:40, c:52, f:5, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey Shake',               desc:'2 scoops whey in 300ml water — within 30 min of session', cal:240, p:48, c:6, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 250g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 150g egg noodles. Pan-sear 3 min each side, rest, slice against grain', cal:520, p:50, c:44, f:16, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in water — slow-release protein overnight', cal:195, p:34, c:6, f:4, prep:'2 min'},
+],
+Tuesday:[
+  {type:'Breakfast',   name:'Greek Yogurt Bowl',        desc:'200g Greek yogurt, 40g rolled oats, mixed berries, 1 tsp honey', cal:380, p:28, c:50, f:7, prep:'3 min'},
+  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'200g cottage cheese, 3 rice cakes, cucumber', cal:270, p:30, c:22, f:4, prep:'2 min'},
+  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'185g tuna (drained), 1 cup white rice, soy sauce', cal:400, p:46, c:48, f:4, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey Shake',               desc:'2 scoops whey in 300ml water', cal:240, p:48, c:6, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Baked Salmon & Veg',       desc:'2x 180g salmon fillet (raw), broccolini, zucchini, 150g sweet potato. Keep Tues salmon — omega-3s help manage elevated E2', cal:520, p:44, c:36, f:18, prep:'25 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 200ml milk', cal:270, p:36, c:14, f:6, prep:'2 min'},
+],
+Wednesday:[
+  {type:'Breakfast',   name:'Omelette & Toast',         desc:'2 whole eggs + 2 whites, spinach, mushrooms, 1 slice sourdough', cal:360, p:30, c:22, f:14, prep:'10 min'},
+  {type:'Mid-Morning', name:'Protein Shake + Apple',    desc:'1.5 scoops whey in water, 1 apple', cal:270, p:35, c:24, f:3, prep:'2 min'},
+  {type:'Pre-Workout', name:'Turkey & Sweet Potato',    desc:'150g turkey breast (raw), 200g sweet potato mash, broccoli', cal:430, p:42, c:46, f:4, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey Shake',               desc:'2 scoops whey in 300ml water', cal:240, p:48, c:6, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 250g rump steak (raw), 200g sweet potato wedges, steamed broccoli, garlic butter. High heat 3-4 min each side', cal:510, p:50, c:36, f:16, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein, 15g almonds', cal:285, p:34, c:6, f:12, prep:'2 min'},
+],
+Thursday:[
+  {type:'Breakfast',   name:'Overnight Oats',           desc:'60g oats, 1 scoop whey, 200ml milk, banana — prep night before', cal:420, p:36, c:54, f:8, prep:'Prep tonight'},
+  {type:'Mid-Morning', name:'Greek Yogurt',             desc:'150g Greek yogurt, 20g almonds', cal:250, p:20, c:12, f:14, prep:'1 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'150g chicken breast (raw), 1 cup white rice, soy', cal:440, p:40, c:52, f:5, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey Shake',               desc:'2 scoops whey in 300ml water', cal:240, p:48, c:6, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 250g rump steak (raw) sliced over 1.25 cups jasmine rice, pickled cucumber, spring onion, soy-sesame drizzle', cal:520, p:50, c:46, f:14, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 200ml milk', cal:270, p:36, c:14, f:6, prep:'2 min'},
+],
+Friday:[
+  {type:'Breakfast',   name:'Eggs & Bacon',             desc:'3 eggs, 2 bacon rashers, mushrooms, 1 slice sourdough', cal:420, p:34, c:18, f:22, prep:'10 min'},
+  {type:'Mid-Morning', name:'Protein Bar',              desc:'High protein bar 20g+ (Musashi, Aussie Bodies)', cal:220, p:22, c:22, f:5, prep:'0 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'150g chicken breast (raw), 1 cup rice, salad', cal:440, p:40, c:52, f:5, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml water, 1 banana', cal:340, p:48, c:28, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 250g rump steak (raw) sliced thin, 3 flour tortillas, salsa, Greek yogurt, avocado, slaw. Marinade: garlic, cumin, olive oil', cal:530, p:50, c:38, f:16, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in water', cal:195, p:34, c:6, f:4, prep:'2 min'},
+],
+Saturday:[
+  {type:'Breakfast',   name:'Protein Pancakes',         desc:'2 scoops protein, 2 eggs, 50g oats — 3 pancakes, berries, light maple syrup', cal:490, p:52, c:46, f:10, prep:'15 min'},
+  {type:'Mid-Morning', name:'Smoothie',                 desc:'1.5 scoops whey, frozen banana, berries, 200ml milk', cal:340, p:40, c:36, f:5, prep:'3 min'},
+  {type:'Lunch',       name:'Chicken & Salad',          desc:'200g chicken breast (raw), large green salad, olive oil dressing, 1 slice sourdough', cal:420, p:46, c:20, f:14, prep:'10 min'},
+  {type:'Post-Workout',name:'Whey Shake',               desc:'2 scoops whey in 300ml water', cal:240, p:48, c:6, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 250g rump steak (raw) on BBQ, roasted sweet potato, asparagus, garlic butter. Best value dinner at $19.99/kg', cal:540, p:52, c:30, f:20, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 200ml milk', cal:270, p:36, c:14, f:6, prep:'2 min'},
+],
+Sunday:[
+  {type:'Breakfast',   name:'Full Brekkie',             desc:'3 eggs, 2 bacon rashers, tomato, mushrooms, 1 slice sourdough', cal:440, p:34, c:20, f:22, prep:'15 min'},
+  {type:'Mid-Morning', name:'Protein Shake',            desc:'1.5 scoops whey in 300ml milk — batch cook while drinking', cal:260, p:36, c:16, f:5, prep:'2 min'},
+  {type:'Lunch',       name:'Batch Chicken Bowl',       desc:'Cook 600g chicken + 3 cups rice + veg — eat one now, store rest for Mon-Wed lunches', cal:480, p:50, c:52, f:6, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in water, 1 banana', cal:340, p:48, c:28, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 250g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans. Season well, rest properly', cal:520, p:50, c:40, f:16, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in water', cal:195, p:34, c:6, f:4, prep:'2 min'},
+],
+},
+2:{
+Monday:[
+  {type:'Breakfast',   name:'Power Oats & Eggs',        desc:'60g oats, 2 eggs + 2 whites, 1 banana, 1 tsp peanut butter, 150ml milk', cal:520, p:38, c:62, f:14, prep:'10 min'},
+  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'200g Greek yogurt, mixed berries, 20g granola, 1 tsp honey', cal:320, p:24, c:38, f:7, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'175g chicken breast (raw), 1.25 cups white rice, soy sauce', cal:510, p:46, c:62, f:5, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 banana', cal:380, p:50, c:36, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 280g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 165g egg noodles', cal:585, p:56, c:50, f:17, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in 200ml milk, 20g almonds', cal:310, p:37, c:14, f:12, prep:'2 min'},
+],
+Tuesday:[
+  {type:'Breakfast',   name:'Protein Pancakes',         desc:'2 scoops protein, 2 eggs, 60g oats — 4 pancakes, 2 bacon rashers, light maple syrup', cal:560, p:52, c:50, f:16, prep:'15 min'},
+  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'220g cottage cheese, 3 rice cakes, tomato', cal:290, p:32, c:24, f:5, prep:'2 min'},
+  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'160g turkey breast (raw), 120g wholegrain pasta, pesto, cherry tomatoes', cal:510, p:46, c:56, f:9, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 3 rice cakes with honey', cal:390, p:48, c:40, f:4, prep:'2 min'},
+  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 190g salmon (raw), large sweet potato, steamed broccolini. Tuesday salmon for omega-3s — important for E2 management', cal:580, p:50, c:48, f:20, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick with minimal water, 1 tbsp peanut butter', cal:310, p:38, c:10, f:12, prep:'2 min'},
+],
+Wednesday:[
+  {type:'Breakfast',   name:'Egg White Omelette & Toast', desc:'2 whole eggs + 3 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:500, p:44, c:34, f:16, prep:'10 min'},
+  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 250ml milk, 1 banana', cal:360, p:44, c:34, f:5, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'175g chicken breast (raw), 250g sweet potato mash, broccoli', cal:500, p:46, c:54, f:5, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 30g dextrose in 400ml water', cal:360, p:48, c:38, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 280g rump steak (raw), 230g sweet potato wedges, steamed broccoli, garlic butter', cal:575, p:56, c:42, f:17, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Berries',         desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:300, p:37, c:22, f:5, prep:'2 min'},
+],
+Thursday:[
+  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'70g oats, 1 scoop whey, 200ml milk, chia seeds, banana, PB', cal:530, p:38, c:66, f:12, prep:'Prep tonight'},
+  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'200g Greek yogurt, 20g almonds, 1 tsp honey', cal:290, p:24, c:20, f:14, prep:'1 min'},
+  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'185g tuna (drained), 1.25 cups white rice, soy, avocado', cal:490, p:48, c:56, f:7, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 400ml Gatorade', cal:380, p:46, c:46, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 280g rump steak (raw) sliced over 1.4 cups jasmine rice, pickled cucumber, spring onion, soy-sesame', cal:580, p:56, c:52, f:15, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 10g dark chocolate', cal:315, p:37, c:18, f:10, prep:'2 min'},
+],
+Friday:[
+  {type:'Breakfast',   name:'Protein Brekkie',          desc:'3 eggs + 2 whites, 2 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:520, p:46, c:30, f:22, prep:'12 min'},
+  {type:'Mid-Morning', name:'Protein Bar + Apple',      desc:'High protein bar 22g+ protein, 1 apple', cal:270, p:24, c:30, f:6, prep:'0 min'},
+  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'175g chicken breast (raw), large wholegrain wrap, avocado, salad', cal:510, p:48, c:50, f:10, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 banana, 1 tsp honey', cal:400, p:48, c:44, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 280g rump steak (raw) sliced thin, 4 flour tortillas, salsa, Greek yogurt, avocado, slaw, cheese', cal:600, p:56, c:44, f:18, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 2 rice cakes with peanut butter scrape', cal:290, p:36, c:18, f:10, prep:'2 min'},
+],
+Saturday:[
+  {type:'Breakfast',   name:'Big Protein Pancakes',     desc:'2.5 scoops protein, 2 eggs, 60g oats — 4 pancakes, berries, maple syrup', cal:580, p:56, c:58, f:12, prep:'15 min'},
+  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'1.5 scoops whey, frozen mango, banana, 200ml milk, 20g granola', cal:420, p:42, c:50, f:6, prep:'5 min'},
+  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'200g chicken breast (raw), 150g wholegrain pasta, pesto, cherry tomatoes, spinach', cal:560, p:52, c:54, f:14, prep:'20 min'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 30g dextrose in 400ml water', cal:360, p:48, c:38, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 280g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter. $19.99/kg', cal:630, p:58, c:36, f:22, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Choc',            desc:'1.5 scoops casein in milk, 1 square dark chocolate', cal:295, p:36, c:16, f:12, prep:'2 min'},
+],
+Sunday:[
+  {type:'Breakfast',   name:'Eggs Benedict',            desc:'3 poached eggs, 2 bacon rashers, 2 English muffins, Greek yogurt', cal:560, p:44, c:42, f:22, prep:'15 min'},
+  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:300, p:42, c:18, f:5, prep:'2 min'},
+  {type:'Lunch',       name:'Batch Chicken Bowl',       desc:'700g chicken + 3.5 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:530, p:52, c:58, f:7, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in milk, 1 banana, 1 tsp honey', cal:400, p:48, c:44, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 280g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, gravy', cal:610, p:56, c:46, f:17, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 200ml milk', cal:270, p:36, c:14, f:6, prep:'2 min'},
+],
+},
+3:{
+Monday:[
+  {type:'Breakfast',   name:'Power Oats & Eggs',        desc:'70g oats, 2 eggs + 3 whites, 1 banana, 1 tbsp peanut butter, 200ml milk', cal:580, p:42, c:68, f:15, prep:'10 min'},
+  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'225g Greek yogurt, blueberries, 25g granola, 1 tsp honey', cal:350, p:26, c:42, f:8, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'190g chicken breast (raw), 1.4 cups white rice, soy sauce', cal:560, p:50, c:66, f:5, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Banana + Dextrose', desc:'2 scoops whey in 300ml milk, 1 banana, 20g dextrose', cal:460, p:50, c:48, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 300g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 180g egg noodles, sesame oil', cal:640, p:60, c:56, f:18, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in 250ml milk, 25g almonds', cal:340, p:38, c:14, f:14, prep:'2 min'},
+],
+Tuesday:[
+  {type:'Breakfast',   name:'Protein Pancakes + Bacon', desc:'2.5 scoops protein, 2 eggs, 60g oats — 4 pancakes, 3 bacon rashers, maple syrup', cal:620, p:56, c:54, f:17, prep:'15 min'},
+  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'240g cottage cheese, 4 rice cakes, tomato, cracked pepper', cal:310, p:34, c:26, f:5, prep:'2 min'},
+  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'170g turkey breast (raw), 140g wholegrain pasta, pesto, cherry tomatoes', cal:550, p:50, c:62, f:9, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 4 rice cakes with honey', cal:430, p:50, c:46, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 195g salmon (raw), large sweet potato, steamed broccolini, lemon butter. Tuesday salmon — omega-3s critical for E2', cal:640, p:54, c:52, f:22, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick, 1 tbsp peanut butter', cal:330, p:39, c:10, f:13, prep:'2 min'},
+],
+Wednesday:[
+  {type:'Breakfast',   name:'Egg White Omelette & Toast', desc:'2 whole eggs + 4 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:540, p:48, c:38, f:17, prep:'10 min'},
+  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 300ml milk, 1 large banana', cal:380, p:44, c:36, f:6, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'190g chicken breast (raw), 275g sweet potato mash, steamed broccoli', cal:540, p:50, c:58, f:6, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 35g dextrose in 400ml water', cal:400, p:48, c:44, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 300g rump steak (raw), 260g sweet potato wedges, steamed broccolini, garlic butter', cal:630, p:60, c:46, f:18, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Berries',         desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:310, p:38, c:22, f:6, prep:'2 min'},
+],
+Thursday:[
+  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'75g oats, 1 scoop whey, 250ml milk, chia seeds, banana, PB', cal:580, p:40, c:70, f:13, prep:'Prep tonight'},
+  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'225g Greek yogurt, 22g almonds, 1 tbsp honey, cinnamon', cal:330, p:26, c:24, f:15, prep:'1 min'},
+  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'185g tuna (drained), 1.4 cups white rice, soy sauce, avocado', cal:530, p:52, c:60, f:8, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 500ml Gatorade', cal:420, p:46, c:52, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 300g rump steak (raw) sliced over 1.5 cups jasmine rice, pickled cucumber, avocado, spring onion, soy-sesame', cal:640, p:60, c:58, f:16, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 15g dark chocolate', cal:350, p:38, c:20, f:12, prep:'2 min'},
+],
+Friday:[
+  {type:'Breakfast',   name:'Full Protein Brekkie',     desc:'3 whole eggs + 2 whites, 3 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:580, p:50, c:34, f:23, prep:'12 min'},
+  {type:'Mid-Morning', name:'Protein Bar + Fruit',      desc:'High protein bar 24g+ protein, 1 apple', cal:290, p:26, c:34, f:7, prep:'0 min'},
+  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'190g chicken breast (raw), large wrap, avocado, salad, mustard', cal:540, p:50, c:54, f:11, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 large banana, 1 tbsp honey', cal:440, p:48, c:48, f:6, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 300g rump steak (raw) sliced, 4 flour tortillas, salsa, Greek yogurt, avocado, cheese, slaw', cal:660, p:60, c:48, f:20, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 3 rice cakes with peanut butter', cal:330, p:38, c:22, f:11, prep:'2 min'},
+],
+Saturday:[
+  {type:'Breakfast',   name:'Big Protein Pancake Stack',desc:'3 scoops protein, 3 eggs, 70g oats — thick stack, berries, maple syrup', cal:660, p:60, c:64, f:14, prep:'20 min'},
+  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'2 scoops whey, frozen mango, banana, 200ml milk — blended thick, granola topping', cal:490, p:46, c:56, f:7, prep:'5 min'},
+  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'230g chicken breast (raw), 180g wholegrain pasta, pesto, cherry tomatoes, spinach, parmesan', cal:640, p:56, c:62, f:15, prep:'20 min'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 35g dextrose in 400ml water', cal:400, p:48, c:44, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 300g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter', cal:700, p:62, c:42, f:24, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Choc',            desc:'1.5 scoops casein in milk, 2 squares dark chocolate 85%', cal:340, p:36, c:18, f:14, prep:'2 min'},
+],
+Sunday:[
+  {type:'Breakfast',   name:'Eggs Benedict Style',      desc:'4 poached eggs, 3 bacon rashers, 2 English muffins, Greek yogurt', cal:620, p:48, c:44, f:24, prep:'20 min'},
+  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:300, p:42, c:18, f:5, prep:'2 min'},
+  {type:'Lunch',       name:'Batch Chicken Bowl',       desc:'750g chicken + 3.75 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:560, p:54, c:62, f:7, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Protein Shake + Banana',   desc:'2 scoops whey in milk, 1 banana, 1 tbsp honey', cal:420, p:48, c:46, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 300g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, red wine jus', cal:670, p:60, c:50, f:18, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein protein, slow-digesting overnight', cal:280, p:36, c:12, f:7, prep:'2 min'},
+],
+},
+4:{
+Monday:[
+  {type:'Breakfast',   name:'Power Oats + Eggs',        desc:'80g oats, 2 eggs + 3 whites, 1 banana, 1 tbsp peanut butter, 200ml milk', cal:620, p:46, c:72, f:16, prep:'10 min'},
+  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'250g full-fat Greek yogurt, 1 cup blueberries, 30g granola, 1 tsp honey', cal:380, p:28, c:44, f:10, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'200g chicken breast (raw), 1.5 cups white rice, 1 tbsp soy sauce', cal:590, p:52, c:72, f:6, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Banana + Dextrose', desc:'2 scoops whey in 350ml milk, 1 banana, 30g dextrose', cal:480, p:52, c:52, f:6, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 320g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 200g egg noodles, sesame oil', cal:680, p:64, c:62, f:20, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in water, 30g almonds', cal:340, p:38, c:10, f:16, prep:'2 min'},
+],
+Tuesday:[
+  {type:'Breakfast',   name:'Protein Pancakes + Bacon', desc:'2 scoops protein, 2 eggs, 60g oats — 4 pancakes, 3 rashers bacon, maple syrup', cal:640, p:56, c:56, f:18, prep:'15 min'},
+  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'250g cottage cheese, 4 rice cakes, tomato, cracked pepper', cal:340, p:36, c:28, f:6, prep:'2 min'},
+  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'180g turkey breast (raw), 150g wholegrain pasta, pesto, cherry tomatoes', cal:580, p:52, c:66, f:10, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 4 rice cakes with honey', cal:460, p:50, c:50, f:5, prep:'2 min'},
+  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 200g salmon (raw), large sweet potato, steamed broccolini, lemon butter. Omega-3s for E2 management', cal:680, p:58, c:56, f:24, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick with minimal water, 1 tbsp peanut butter', cal:360, p:40, c:12, f:14, prep:'2 min'},
+],
+Wednesday:[
+  {type:'Breakfast',   name:'5-Egg White Omelette + Toast', desc:'2 whole eggs + 4 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:580, p:52, c:40, f:18, prep:'10 min'},
+  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 300ml milk, 1 large banana', cal:380, p:44, c:36, f:6, prep:'2 min'},
+  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'200g chicken breast (raw), 300g sweet potato mash, steamed broccoli', cal:570, p:52, c:62, f:6, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 40g dextrose in 400ml water', cal:430, p:48, c:48, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 320g rump steak (raw), 300g sweet potato wedges, steamed broccolini, garlic butter, cherry tomatoes', cal:680, p:64, c:52, f:20, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Fruit',           desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:340, p:38, c:24, f:6, prep:'2 min'},
+],
+Thursday:[
+  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'80g oats, 1 scoop protein, 250ml milk, chia seeds, banana, PB — prep night before', cal:610, p:44, c:74, f:14, prep:'Prep tonight'},
+  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'250g Greek yogurt, 25g almonds, 1 tbsp honey, cinnamon', cal:370, p:28, c:28, f:16, prep:'1 min'},
+  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'2x 185g tuna (drained), 1.5 cups white rice, soy sauce, avocado', cal:560, p:54, c:64, f:8, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 500ml Gatorade', cal:440, p:46, c:54, f:3, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 320g rump steak (raw) sliced over 1.5 cups jasmine rice, pickled cucumber, avocado, sesame, soy drizzle', cal:690, p:64, c:64, f:18, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 20g dark chocolate', cal:380, p:38, c:22, f:14, prep:'2 min'},
+],
+Friday:[
+  {type:'Breakfast',   name:'Full Protein Brekkie',     desc:'3 whole eggs + 3 whites, 3 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:620, p:54, c:38, f:24, prep:'15 min'},
+  {type:'Mid-Morning', name:'Protein Bar + Fruit',      desc:'High-protein bar (25g+), 1 apple', cal:340, p:28, c:38, f:8, prep:'0 min'},
+  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'200g chicken breast (raw), large wholegrain wrap, avocado, salad, mustard', cal:570, p:52, c:58, f:12, prep:'5 min'},
+  {type:'Post-Workout',name:'Whey Shake + Banana',      desc:'2 scoops whey in 300ml milk, 1 large banana, 1 tbsp honey', cal:460, p:48, c:50, f:6, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 320g rump steak (raw) sliced thin, 4 flour tortillas, salsa, Greek yogurt, avocado, cheese, slaw. Best Friday feed going', cal:710, p:64, c:56, f:22, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 3 rice cakes with peanut butter', cal:360, p:38, c:24, f:12, prep:'2 min'},
+],
+Saturday:[
+  {type:'Breakfast',   name:'Big Protein Pancake Stack',desc:'3 scoops protein, 3 eggs, 80g oats — thick stack, mixed berries, maple syrup', cal:700, p:62, c:70, f:16, prep:'20 min'},
+  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'2 scoops protein, frozen mango, banana, 200ml milk — blended thick, granola topping', cal:520, p:48, c:58, f:8, prep:'5 min'},
+  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'250g chicken breast (raw), 200g wholegrain pasta, pesto, cherry tomatoes, spinach, parmesan', cal:680, p:60, c:68, f:16, prep:'20 min'},
+  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 40g dextrose in water', cal:420, p:48, c:46, f:2, prep:'2 min'},
+  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 320g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter. Premium rump at $19.99/kg', cal:750, p:66, c:48, f:26, prep:'20 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein + Dark Chocolate',  desc:'1.5 scoops casein in milk, 2 squares dark chocolate 85%', cal:360, p:36, c:18, f:16, prep:'2 min'},
+],
+Sunday:[
+  {type:'Breakfast',   name:'Eggs Benedict Style',      desc:'4 poached eggs, 3 bacon rashers, 2 English muffins, Greek yogurt', cal:640, p:50, c:46, f:24, prep:'20 min'},
+  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:340, p:44, c:18, f:6, prep:'2 min'},
+  {type:'Lunch',       name:'Batch Chicken Rice Bowls', desc:'800g chicken + 4 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:580, p:56, c:64, f:8, prep:'Batch cook'},
+  {type:'Post-Workout',name:'Protein Shake + Banana',   desc:'2 scoops whey in milk, 1 banana, 1 tbsp honey', cal:440, p:48, c:48, f:6, prep:'2 min'},
+  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 320g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, red wine jus or gravy', cal:720, p:64, c:56, f:20, prep:'30 min', forTwo:true},
+  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein protein, slow-digesting overnight', cal:300, p:36, c:10, f:8, prep:'2 min'},
+],
+},
+};
+
+var NUT_SHOPPING = {
+1:[
+  {cat:'🥩 Protein',items:['Rump steak 3.5kg (~$70 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner)', 'Chicken breast 1kg', 'Eggs x18', 'Short-cut bacon 1 pack', 'Tuna cans x3', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
+  {cat:'🌾 Carbs',items:['White rice 1.5kg', 'Sweet potato x3', 'Rolled oats 1kg', 'Wholegrain bread', 'Sourdough 1 loaf', 'Egg noodles 300g', 'Flour tortillas', 'Rice cakes 1 pack']},
+  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x4', 'Mushrooms 2 packs', 'Broccoli x2', 'Asparagus 1 bunch', 'Sweet potato x3', 'Cherry tomatoes', 'Spinach bag', 'Spring onions', 'Potato x3', 'Pumpkin piece']},
+  {cat:'🍓 Fruit & Dairy',items:['Banana x7', 'Mixed berries frozen 500g', 'Apple x3', 'Greek yogurt 1kg', 'Cottage cheese 500g', 'Milk 2L', 'Avocado x3', 'Garlic butter']},
+  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Honey', 'Garlic', 'Cumin', 'Salsa jar', 'Creatine 5g/day', 'Fish oil capsules']},
+],
+2:[
+  {cat:'🥩 Protein',items:['Rump steak 3.9kg (~$78 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner)', 'Chicken breast 1.2kg', 'Eggs x20', 'Short-cut bacon 2 packs', 'Tuna cans x4', 'Turkey breast 200g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
+  {cat:'🌾 Carbs',items:['White rice 2kg', 'Sweet potato x4', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 300g', 'Egg noodles 330g', 'Wholegrain wraps x4', 'Flour tortillas', 'Rice cakes 1 pack', 'Dextrose or Gatorade powder']},
+  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x5', 'Mushrooms 2 packs', 'Broccoli x2', 'Broccolini 1 bunch', 'Asparagus 1 bunch', 'Zucchini x2', 'Cherry tomatoes 2 punnets', 'Spinach bag', 'Potato x3', 'Pumpkin piece']},
+  {cat:'🍓 Fruit & Dairy',items:['Banana x10', 'Berries frozen 500g', 'Mango frozen 300g', 'Apple x3', 'Lemon x2', 'Greek yogurt 1kg', 'Cottage cheese 500g', 'Milk 2.5L', 'Avocado x4', 'Cheese block']},
+  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar', 'Honey large', 'Peanut butter', 'Granola 300g', 'Almonds 150g', 'Salsa jar', 'Creatine 5g/day', 'Fish oil', 'Dark chocolate 85%']},
+],
+3:[
+  {cat:'🥩 Protein',items:['Rump steak 4.2kg (~$84 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner)', 'Chicken breast 1.4kg', 'Eggs x22', 'Short-cut bacon 2 packs', 'Tuna cans x5', 'Turkey breast 220g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
+  {cat:'🌾 Carbs',items:['White rice 2kg', 'Sweet potato x5', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 350g', 'Egg noodles 360g', 'Wholegrain wraps x4', 'Flour tortillas', 'Rice cakes 2 packs', 'Dextrose powder']},
+  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x5', 'Mushrooms 3 packs', 'Broccoli x2', 'Broccolini 2 bunches', 'Asparagus 1 bunch', 'Zucchini x3', 'Cherry tomatoes 2 punnets', 'Spinach large bag', 'Potato x4', 'Pumpkin piece', 'Parsnip x2']},
+  {cat:'🍓 Fruit & Dairy',items:['Banana x12', 'Berries frozen 750g', 'Mango frozen 300g', 'Blueberries punnet', 'Apple x4', 'Lemon x2', 'Greek yogurt 1kg x2', 'Cottage cheese 500g', 'Milk 3L', 'Avocado x5', 'Feta cheese', 'Parmesan']},
+  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar large', 'Honey large', 'Peanut butter large', 'Granola 400g', 'Almonds 200g', 'Chia seeds', 'Salsa jar', 'Taco seasoning', 'Gatorade', 'Creatine 5g/day', 'Fish oil', 'Vitamin D3+K2', 'Dark chocolate 85%']},
+],
+4:[
+  {cat:'🥩 Protein',items:['Rump steak 4.5kg (~$90 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner — keep for omega-3s)', 'Chicken breast 1.6kg', 'Eggs x24', 'Short-cut bacon 2 packs', 'Tuna cans x6', 'Turkey breast 250g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
+  {cat:'🌾 Carbs',items:['White rice 2.5kg', 'Sweet potato x5', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 400g', 'Egg noodles 400g', 'Wholegrain wraps x6', 'Flour tortillas', 'Rice cakes 2 packs', 'Dextrose powder', 'English muffins x4']},
+  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x6', 'Mushrooms 3 packs', 'Broccoli x2', 'Broccolini 2 bunches', 'Asparagus 1 bunch', 'Zucchini x3', 'Cherry tomatoes 3 punnets', 'Spinach large bag', 'Potato x4', 'Pumpkin piece', 'Parsnip x2', 'Peas frozen bag', 'Corn frozen bag']},
+  {cat:'🍓 Fruit & Dairy',items:['Banana x14', 'Berries frozen 1kg', 'Mango frozen 400g', 'Blueberries punnet', 'Apple x4', 'Lemon x2', 'Greek yogurt 1kg x2', 'Cottage cheese 500g', 'Milk 3L', 'Avocado x6', 'Feta cheese', 'Parmesan', 'Cheese block']},
+  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar large', 'Honey large', 'Peanut butter large', 'Granola 500g', 'Almonds 300g', 'Chia seeds', 'Salsa jar', 'Taco seasoning', 'Gatorade / electrolytes', 'Dextrose powder', 'Creatine monohydrate 5g/day', 'Fish oil 3-5g EPA/DHA', 'Vitamin D3+K2 5000IU', 'ZMA before bed', 'Dark chocolate 85% x2 bars', 'Maple syrup']},
+],
+};
+
+// ═══════════════════════════════════
+// NUTRITION STATE
+// ═══════════════════════════════════
+var nutBlock = 0; // 0-3 index
+var nutDay = 'Monday';
+var nutView = 'plan'; // plan / shopping / blocks
+var openMeal = null;
+var shopChecked = {};
+
+// ═══════════════════════════════════
+// NUTRITION RENDER
+// ═══════════════════════════════════
+function renderNutrition() {
+  var c = document.getElementById('nutrition-content');
+  c.innerHTML = '';
+
+  var block = NUT_BLOCKS[nutBlock];
+
+  // Sub-header tabs
+  var subNav = document.createElement('div');
+  subNav.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;overflow-x:auto';
+  NUT_BLOCKS.forEach(function(b, i) {
+    var btn = document.createElement('button');
+    btn.style.cssText = 'padding:6px 12px;border-radius:99px;border:none;cursor:pointer;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;white-space:nowrap;transition:all .15s;flex-shrink:0;';
+    btn.style.background = nutBlock===i ? b.color : 'rgba(255,255,255,0.05)';
+    btn.style.color = nutBlock===i ? '#000' : '#666';
+    btn.style.fontWeight = nutBlock===i ? '700' : '400';
+    btn.innerHTML = b.label + ' <span style="opacity:.7">' + b.weeks + '</span>';
+    btn.onclick = function(){ nutBlock=i; openMeal=null; renderNutrition(); };
+    subNav.appendChild(btn);
+  });
+  c.appendChild(subNav);
+
+  // View tabs
+  var viewTabs = document.createElement('div');
+  viewTabs.style.cssText = 'display:flex;background:rgba(255,255,255,0.05);border-radius:10px;padding:3px;gap:2px;margin-bottom:14px';
+  [['plan','📅 Plan'],['shopping','🛒 Shop'],['blocks','📋 Roadmap'],['protocol','💊 Protocol']].forEach(function(pair) {
+    var v=pair[0], l=pair[1];
+    var btn = document.createElement('button');
+    btn.style.cssText = 'flex:1;padding:6px 10px;border-radius:7px;border:none;cursor:pointer;font-family:DM Mono,monospace;font-size:10px;letter-spacing:.5px;transition:all .2s;';
+    btn.style.background = nutView===v ? 'rgba(255,255,255,0.1)' : 'transparent';
+    btn.style.color = nutView===v ? '#fff' : '#555';
+    btn.textContent = l;
+    btn.onclick = function(){ nutView=v; renderNutrition(); };
+    viewTabs.appendChild(btn);
+  });
+  c.appendChild(viewTabs);
+
+  if (nutView==='plan') renderNutPlan(c, block);
+  else if (nutView==='shopping') renderNutShopping(c, block);
+  else if (nutView==='protocol') renderNutProtocol(c);
+  else renderNutBlocks(c);
+}
+
+function renderNutPlan(c, block) {
+  // Day tabs
+  var dayNav = document.createElement('div');
+  dayNav.style.cssText = 'display:flex;gap:0;overflow-x:auto;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06)';
+  NUT_DAYS.forEach(function(d) {
+    var btn = document.createElement('button');
+    btn.style.cssText = 'padding:7px 12px;border:none;cursor:pointer;font-family:DM Mono,monospace;font-size:11px;background:transparent;white-space:nowrap;transition:all .15s;border-bottom:2px solid transparent;flex-shrink:0;';
+    btn.style.color = nutDay===d ? block.color : '#555';
+    btn.style.borderBottomColor = nutDay===d ? block.color : 'transparent';
+    btn.textContent = d.slice(0,3).toUpperCase();
+    btn.onclick = function(){ nutDay=d; openMeal=null; renderNutrition(); };
+    dayNav.appendChild(btn);
+  });
+  c.appendChild(dayNav);
+
+  var meals = (NUT_PLANS[block.id]||{})[nutDay]||[];
+  var totals = meals.reduce(function(a,m){return {cal:a.cal+m.cal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f};},{cal:0,p:0,c:0,f:0});
+
+  // Block note
+  var noteDiv = document.createElement('div');
+  noteDiv.style.cssText = 'background:'+block.color+'08;border:1px solid '+block.color+'25;border-radius:12px;padding:10px 14px;margin-bottom:14px';
+  noteDiv.innerHTML = '<div style="font-size:9px;color:'+block.color+';letter-spacing:2px;margin-bottom:4px;font-weight:700">'+block.weeks.toUpperCase()+' — '+block.cal+' KCAL</div><div style="font-size:11px;color:#888;line-height:1.7">'+block.note+'</div>';
+  c.appendChild(noteDiv);
+
+  // Macro bars
+  var macroCard = document.createElement('div');
+  macroCard.className = 'card';
+  macroCard.style.marginBottom = '14px';
+  macroCard.innerHTML = '<div class="section-title">'+nutDay.toUpperCase()+' — DAILY TOTALS</div>';
+  [{label:'Calories',val:totals.cal,target:block.cal,col:'#f97316'},
+   {label:'Protein',val:totals.p,target:block.p,col:'#22c55e'},
+   {label:'Carbs',val:totals.c,target:block.c,col:'#3b82f6'},
+   {label:'Fat',val:totals.f,target:block.f,col:'#a855f7'}
+  ].forEach(function(m) {
+    var pct = Math.min(100, Math.round(m.val/m.target*100));
+    var row = document.createElement('div');
+    row.style.marginBottom='8px';
+    row.innerHTML='<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px"><span>'+m.label+'</span><span><strong style="color:'+m.col+'">'+m.val+'</strong><span style="color:#444">/'+m.target+(m.label==='Calories'?' kcal':'g')+'</span></span></div><div style="height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+m.col+';border-radius:99px;box-shadow:0 0 6px '+m.col+'50"></div></div>';
+    macroCard.appendChild(row);
+  });
+  c.appendChild(macroCard);
+
+  // Meal cards
+  meals.forEach(function(meal, idx) {
+    c.appendChild(buildMealCard(meal, idx, block.color));
+  });
+
+  // Raw weight note
+  var rawNote = document.createElement('div');
+  rawNote.style.cssText = 'background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.2);border-radius:10px;padding:10px 14px;margin-top:6px';
+  rawNote.innerHTML = '<div style="font-size:9px;color:#eab308;letter-spacing:2px;margin-bottom:4px">⚖️ ALL WEIGHTS ARE RAW</div><div style="font-size:11px;color:#888;line-height:1.7">Rump steak loses ~25-30% when cooked. 250g raw → ~175g cooked. Weigh everything before cooking for accuracy.</div>';
+  c.appendChild(rawNote);
+}
+
+function buildMealCard(meal, idx, color) {
+  var col = NUT_TYPE_COLOR[meal.type] || '#888';
+  var isOpen = openMeal === idx;
+  var card = document.createElement('div');
+  card.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,'+(isOpen?'0.1':'0.06')+');border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border .2s;';
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'padding:13px 15px;cursor:pointer;display:flex;align-items:center;gap:10px';
+  hdr.onclick = function(){ openMeal = isOpen ? null : idx; renderNutrition(); };
+  hdr.innerHTML = '<div style="background:'+col+'18;color:'+col+';font-size:9px;font-weight:700;letter-spacing:1.5px;padding:3px 9px;border-radius:99px;border:1px solid '+col+'30;white-space:nowrap;font-family:DM Mono,monospace">'+meal.type.toUpperCase()+'</div>'
+    +'<div style="flex:1;min-width:0"><div style="font-family:Cabinet Grotesk,sans-serif;font-size:13px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(meal.name)+'</div>'
+    +'<div style="font-size:10px;color:#555;margin-top:2px">'+meal.prep+' · '+meal.cal+' kcal · '+meal.p+'g pro</div></div>'
+    +(meal.forTwo?'<span style="font-size:9px;background:rgba(34,197,94,0.1);color:#16a34a;padding:2px 7px;border-radius:99px;border:1px solid rgba(34,197,94,0.2);flex-shrink:0">×2</span>':'')
+    +'<span style="color:#444;font-size:11px;flex-shrink:0;margin-left:6px">'+(isOpen?'▲':'▼')+'</span>';
+  card.appendChild(hdr);
+  if (isOpen) {
+    var body = document.createElement('div');
+    body.style.cssText = 'padding:0 15px 14px;border-top:1px solid rgba(255,255,255,0.05)';
+    body.innerHTML = '<p style="font-family:DM Mono,monospace;font-size:12px;color:#777;margin:12px 0;line-height:1.7">'+esc(meal.desc)+'</p>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 11px;text-align:center"><div style="font-size:9px;color:#555">🔥</div><div style="font-size:13px;font-weight:700;color:#fff;font-family:Cabinet Grotesk,sans-serif">'+meal.cal+'<span style="font-size:9px;color:#555">kcal</span></div></div>'
+      +'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 11px;text-align:center"><div style="font-size:9px;color:#555">💪</div><div style="font-size:13px;font-weight:700;color:#fff;font-family:Cabinet Grotesk,sans-serif">'+meal.p+'<span style="font-size:9px;color:#555">g</span></div></div>'
+      +'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 11px;text-align:center"><div style="font-size:9px;color:#555">🌾</div><div style="font-size:13px;font-weight:700;color:#fff;font-family:Cabinet Grotesk,sans-serif">'+meal.c+'<span style="font-size:9px;color:#555">g</span></div></div>'
+      +'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 11px;text-align:center"><div style="font-size:9px;color:#555">🫒</div><div style="font-size:13px;font-weight:700;color:#fff;font-family:Cabinet Grotesk,sans-serif">'+meal.f+'<span style="font-size:9px;color:#555">g</span></div></div>'
+      +'</div>';
+    card.appendChild(body);
+  }
+  return card;
+}
+
+function renderNutShopping(c, block) {
+  var rumpKg = block.id===1?'3.5':block.id===2?'3.9':block.id===3?'4.2':'4.5';
+  var rumpCost = block.id===1?'~$70':block.id===2?'~$78':block.id===3?'~$84':'~$90';
+
+  var noteDiv = document.createElement('div');
+  noteDiv.style.cssText = 'background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 14px;margin-bottom:14px';
+  noteDiv.innerHTML = '<div style="font-size:9px;color:#22c55e;letter-spacing:2px;margin-bottom:4px">🥩 RUMP STEAK DEAL — $19.99/kg</div><div style="font-size:11px;color:#888;line-height:1.7">Buy '+rumpKg+'kg this week ('+rumpCost+') — covers 7 dinners for 2. Tuesday keep salmon for omega-3s to help manage elevated E2.</div>';
+  c.appendChild(noteDiv);
+
+  var shopList = NUT_SHOPPING[block.id]||[];
+  shopList.forEach(function(cat) {
+    var catDiv = document.createElement('div');
+    catDiv.className = 'card';
+    catDiv.style.marginBottom = '12px';
+    catDiv.innerHTML = '<div style="font-size:11px;color:#aaa;letter-spacing:1.5px;margin-bottom:10px;font-weight:700">'+cat.cat+'</div>';
+    var itemsWrap = document.createElement('div');
+    itemsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px';
+    cat.items.forEach(function(item) {
+      var key = block.id+'_'+item;
+      var checked = shopChecked[key]||false;
+      var pill = document.createElement('div');
+      pill.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;background:'+(checked?'rgba(34,197,94,0.08)':'rgba(255,255,255,0.03)')+';border:1px solid '+(checked?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.07)')+';border-radius:99px;cursor:pointer;transition:all .15s';
+      pill.innerHTML = '<div style="width:12px;height:12px;border-radius:3px;border:1.5px solid '+(checked?'#22c55e':'#444')+';background:'+(checked?'#22c55e':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(checked?'<span style="color:#000;font-size:8px;font-weight:900">✓</span>':'')+'</div>'
+        +'<span style="font-size:11px;color:'+(checked?'#22c55e':'#888')+';font-family:DM Mono,monospace;text-decoration:'+(checked?'line-through':'none')+';white-space:nowrap">'+esc(item)+'</span>';
+      pill.onclick = function(){ shopChecked[key]=!shopChecked[key]; renderNutrition(); };
+      itemsWrap.appendChild(pill);
+    });
+    catDiv.appendChild(itemsWrap);
+    c.appendChild(catDiv);
+  });
+}
+
+function renderNutBlocks(c) {
+  var title = document.createElement('div');
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Reverse Diet Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">From 1,900 cal → lean bulk target over 7 weeks</div>';
+  c.appendChild(title);
+
+  NUT_BLOCKS.forEach(function(b, i) {
+    var card = document.createElement('div');
+    card.style.cssText = 'display:flex;gap:14px;margin-bottom:14px;position:relative';
+    var circle = document.createElement('div');
+    circle.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+b.color+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;font-family:Cabinet Grotesk,sans-serif;flex-shrink:0;z-index:1;margin-top:2px';
+    circle.textContent = b.id;
+    var inner = document.createElement('div');
+    inner.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid '+b.color+'30;border-radius:14px;padding:14px 16px;flex:1';
+    inner.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<div><div style="font-family:Cabinet Grotesk,sans-serif;font-size:15px;font-weight:700">'+b.label+' — '+b.weeks+'</div>'
+      +'<div style="font-size:10px;color:'+b.color+';margin-top:2px;letter-spacing:1px">'+b.cal+' KCAL</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:#555">'+b.p+'g pro</div><div style="font-size:11px;color:#555">'+b.c+'g carbs</div></div></div>'
+      +'<div style="font-size:11px;color:#666;line-height:1.8;margin-bottom:10px">'+b.note+'</div>';
+    var viewBtn = document.createElement('button');
+    viewBtn.style.cssText = 'padding:6px 14px;border-radius:8px;background:'+b.color+'15;border:1px solid '+b.color+'30;color:'+b.color+';font-size:10px;cursor:pointer;font-family:DM Mono,monospace;letter-spacing:1px';
+    viewBtn.textContent = 'VIEW MEALS →';
+    viewBtn.onclick = function(){ nutBlock=i; nutView='plan'; renderNutrition(); };
+    inner.appendChild(viewBtn);
+    card.appendChild(circle);
+    card.appendChild(inner);
+    c.appendChild(card);
+  });
+
+  var e2Note = document.createElement('div');
+  e2Note.style.cssText = 'background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin-top:6px';
+  e2Note.innerHTML = '<div style="font-size:10px;color:#ef4444;letter-spacing:2px;margin-bottom:6px;font-weight:700">⚠️ BLOODWORK FLAG</div><div style="font-size:11px;color:#888;line-height:1.8">Your E2 is elevated at 252 pmol/L (ref &lt;150). High oestradiol increases fat storage and water retention, masking lean bulk progress. Address this with an AI before Block 4 for cleaner results.</div>';
+  c.appendChild(e2Note);
+}
+
+
+
+function renderNutProtocol(c) {
+  var sections = [
+    { title:'⏱ MEAL TIMING', color:'#3b82f6', items:[
+      '6:00am — Breakfast: High protein + carbs. Start MPS (muscle protein synthesis) early.',
+      '9:30am — Mid-morning: Protein bridge between meals. Never skip — keeps MPS elevated.',
+      '12:30pm — Pre-workout meal: 1.5-2hrs before gym session. Carb-heavy for fuel.',
+      'Post-gym — Shake within 30 min of session. Non-negotiable. This is your most important meal.',
+      '7:00pm — Dinner with partner: Largest meal of the day. High protein + carbs.',
+      '10:00pm — Casein shake: Slow-release protein overnight. Protects muscle during sleep.',
+    ]},
+    { title:'💊 KEY SUPPLEMENTS', color:'#22c55e', items:[
+      'Whey protein — 2 scoops post-workout + 1 scoop in meals as needed.',
+      'Casein protein — 1.5 scoops before bed every night without exception.',
+      'Creatine monohydrate — 5g daily. Timing does not matter. Take it every day.',
+      'Fish oil — 3-5g EPA/DHA daily. Helps manage inflammation and your elevated E2.',
+      'Vitamin D3 + K2 — 5,000 IU daily. Supports hormone production and immune function.',
+      'Zinc + Magnesium (ZMA) — Before bed. Improves sleep quality and supports testosterone.',
+    ]},
+    { title:'💉 PROTOCOL — 140mg TEST E/WEEK', color:'#a855f7', items:[
+      'Current dose: 40mg Test E every 2 days (~140mg/week) — TRT/cruise range.',
+      'Your total testosterone is at 26.5 nmol/L — near top of reference range. Well managed.',
+      'SHBG at 20 nmol/L — low-normal, meaning more free active testosterone. Favourable.',
+      '⚠️ E2 ELEVATED: 252 pmol/L vs reference <150. This is the primary thing to address.',
+      'High E2 causes water retention, increased fat storage, and mood sensitivity.',
+      'Theoretical fix: Low-dose AI (Anastrozole 0.25mg 2x/week or Exemestane 12.5mg 2x/week).',
+      'Target E2 range: 80-130 pmol/L — do NOT crash it completely.',
+      'Consider daily injections (20mg/day) vs EOD to reduce peak-to-trough swing and aromatisation.',
+      'Get bloodwork every 8-12 weeks — non-negotiable for long-term health monitoring.',
+    ]},
+    { title:'💧 HYDRATION', color:'#06b6d4', items:[
+      'Minimum 4L water daily — enhanced compounds increase hydration needs.',
+      'Add electrolytes if training sessions exceed 60 minutes.',
+      'Creatine pulls water into muscle cells — extra hydration is essential.',
+      'Limit alcohol — directly impairs protein synthesis and recovery. Worse on cycle.',
+    ]},
+    { title:'🛌 RECOVERY', color:'#f97316', items:[
+      '7-8 hrs sleep minimum — GH pulses occur during sleep. This is when you actually grow.',
+      'Your 6am wake-up means trading past midnight DIRECTLY cuts muscle growth.',
+      'Hard screen cut-off at 12:15am on trading nights — protect sleep above most things.',
+      'Deload every 6-8 weeks — joints and CNS need it even on cycle.',
+      'Two leg sessions per week (Mon + Thu) is the biggest single change for your physique.',
+    ]},
+    { title:'📸 WEEKLY CHECK-IN PROTOCOL', color:'#ec4899', items:[
+      'Weigh every morning — same time, post-toilet, pre-food. Average Mon-Fri for the week.',
+      'Weekly progress photo every Sunday — upload to Claude chat for body composition coaching.',
+      'Log all sets in the Training tab — progressive overload is tracked automatically.',
+      'Use the Analysis tab every Sunday to get calorie adjustment recommendations.',
+      'Current phase: Reverse diet (1,900 → 2,200 → 2,500 → 2,800 → 3,100 cal over 7 weeks).',
+      'Target lean bulk rate: 0.2kg/week. If gaining faster than 0.4kg/week, reduce 150 cal.',
+    ]},
+  ];
+
+  var title = document.createElement('div');
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Protocol</div><div style="font-size:11px;color:#555;margin-bottom:20px">Supplements, timing, hormones and recovery</div>';
+  c.appendChild(title);
+
+  sections.forEach(function(s) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.borderColor = s.color + '25';
+    card.style.marginBottom = '12px';
+    var heading = document.createElement('div');
+    heading.style.cssText = 'font-size:10px;color:'+s.color+';letter-spacing:2px;font-weight:700;margin-bottom:12px';
+    heading.textContent = s.title;
+    card.appendChild(heading);
+    s.items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;margin-bottom:8px;align-items:flex-start';
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:5px;height:5px;border-radius:50%;background:'+s.color+';margin-top:6px;flex-shrink:0';
+      var txt = document.createElement('span');
+      txt.style.cssText = 'font-size:11px;color:#888;line-height:1.7;font-family:DM Mono,monospace';
+      txt.textContent = item;
+      row.appendChild(dot);
+      row.appendChild(txt);
+      card.appendChild(row);
+    });
+    c.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+loadData();
+initCheckin();
+updateHeader();
+</script>
+</body>
+</html>
