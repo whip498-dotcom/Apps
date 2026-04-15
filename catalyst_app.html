@@ -1835,8 +1835,44 @@ function deletePhoto(idx) {
 
 function viewPhoto(idx) {
   var p = photos[idx];
-  var win = window.open('', '_blank');
-  if (win) win.document.write('<body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+p.dataUrl+'" style="max-width:100%;max-height:100vh"></body>');
+  if (!p) return;
+  closePhotoViewer(); // ensure no stacking
+  var overlay = document.createElement('div');
+  overlay.id = 'photoViewer';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,20px)';
+  overlay.onclick = function(ev) { if (ev.target === overlay) closePhotoViewer(); };
+
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '×';
+  closeBtn.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top,12px) + 12px);right:16px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:26px;font-family:inherit;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;z-index:10001';
+  closeBtn.onclick = closePhotoViewer;
+  overlay.appendChild(closeBtn);
+
+  var img = document.createElement('img');
+  img.src = p.dataUrl;
+  img.style.cssText = 'max-width:94%;max-height:78vh;border-radius:8px;object-fit:contain';
+  overlay.appendChild(img);
+
+  var info = document.createElement('div');
+  info.style.cssText = 'margin-top:16px;text-align:center;color:#fff;font-family:inherit';
+  info.innerHTML = '<div style="font-size:14px;font-weight:700;letter-spacing:0.5px">' + (p.date || '(no date)') + '</div>'
+    + (p.weight ? '<div style="font-size:11px;color:#888;margin-top:4px">' + p.weight + ' kg</div>' : '')
+    + '<div style="font-size:10px;color:#555;margin-top:12px;letter-spacing:1px">TAP OUTSIDE OR × TO CLOSE</div>';
+  overlay.appendChild(info);
+
+  document.body.appendChild(overlay);
+  // Allow swipe-down or Escape to close
+  document.addEventListener('keydown', photoViewerEsc);
+}
+
+function closePhotoViewer() {
+  var el = document.getElementById('photoViewer');
+  if (el) el.parentNode.removeChild(el);
+  document.removeEventListener('keydown', photoViewerEsc);
+}
+
+function photoViewerEsc(ev) {
+  if (ev.key === 'Escape') closePhotoViewer();
 }
 
 function renderPhotosSection() {
