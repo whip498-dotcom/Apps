@@ -1065,7 +1065,21 @@ function openDrill(cat){
     // Summary
     +'<div style="background:linear-gradient(135deg,'+a+'18,'+a+'04);border:1px solid '+a+'30;border-radius:14px;padding:14px 16px;margin-bottom:16px">'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:10px">'
-    +'<div><div style="font-size:10px;color:var(--muted)">SPENT</div><div style="font-size:24px;font-weight:900;color:'+colour+'">
+    +'<div><div style="font-size:10px;color:var(--muted)">SPENT</div><div style="font-size:24px;font-weight:900;color:'+colour+'">$'+fmtS(spPer)+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:10px;color:var(--muted)">BUDGET</div><div style="font-size:24px;font-weight:900">$'+fmtS(budPer)+'</div></div>'
+    +'</div>'
+    +'<div style="height:8px;background:var(--card2);border-radius:4px;overflow:hidden;margin-top:8px"><div style="height:100%;background:'+colour+';width:'+pct+'%"></div></div>'
+    +'</div>'
+    +(txns.length?txns.map(t=>'<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px">'+t.description+'</div><div style="font-size:10px;color:var(--muted)">'+t.date+'</div></div><div style="font-size:13px;font-weight:700;color:var(--red)">-$'+fmt(t.amount)+'</div></div>').join(''):'<div style="text-align:center;padding:24px 0;color:var(--muted)">No transactions in this period.</div>');
+  modal.classList.add('open');
+}
+
+function closeDrill(){
+  document.getElementById('drillmod').classList.remove('open');
+  drillCat=null;
+}
+
+function saveGoal(){
   const v=parseFloat(document.getElementById('sgi').value)||0;
   D.goal=v; LS.s('fg',v); rBud();
 }
