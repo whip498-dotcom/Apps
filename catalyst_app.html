@@ -1749,8 +1749,6 @@ initCheckin();
 updateHeader();
 </script>
 
-<!-- Hidden input for progress photo capture -->
-<input type="file" id="photoInput" accept="image/*" onchange="takePhoto(event)" style="display:none">
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -1768,11 +1766,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ---------- 2. PROGRESS PHOTOS ----------
-var PHOTO_KEY = 'catalyst_photos_v1';
-var photos = [];
-try { var p = localStorage.getItem(PHOTO_KEY); if (p) photos = JSON.parse(p); } catch(e){}
-function savePhotos() { try { localStorage.setItem(PHOTO_KEY, JSON.stringify(photos)); } catch(e){ alert('Storage full. Delete some older photos.'); } }
+// (Progress photos feature removed — was causing app bloat)
 
 function takePhoto(ev) {
   var file = ev.target.files[0];
@@ -1787,7 +1781,7 @@ function takePhoto(ev) {
     img.onload = function() {
       try {
         var canvas = document.createElement('canvas');
-        var maxDim = 600;
+        var maxDim = 1200;
         var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
         if (!w || !h) { alert('Image has zero dimensions.'); return; }
         if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
@@ -1797,7 +1791,7 @@ function takePhoto(ev) {
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         if (!dataUrl || dataUrl.length < 500) { alert('Canvas export produced empty image — may be an iOS HEIC issue.'); return; }
         console.log('[photos] dataUrl length:', dataUrl.length);
         var weight = (typeof checkins !== 'undefined' && checkins.length) ? checkins[checkins.length-1].weight : null;
@@ -2048,7 +2042,6 @@ function renderCorrelationSection() {
     // Append new sections
     c.insertAdjacentHTML('beforeend', renderCorrelationSection());
     c.insertAdjacentHTML('beforeend', buildAICoachCard());
-    c.insertAdjacentHTML('beforeend', renderPhotosSection());
   };
   // Re-render if user is currently on analysis screen
   var ana = document.getElementById('screen-analysis');
