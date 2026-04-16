@@ -2028,6 +2028,226 @@ function renderCorrelationSection() {
   return html;
 }
 
+// ---------- 5. POP-OUT REST TIMER OVERLAY ----------
+var timerOverlay = null;
+var timerOverlayInterval = null;
+
+function showTimerOverlay() {
+  if (timerOverlay) return; // already showing
+  var ov = document.createElement('div');
+  ov.id = 'restTimerOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation';
+  ov.innerHTML = '<div style="font-size:9px;letter-spacing:3px;color:#3b82f6;margin-bottom:12px">REST TIMER</div>'
+    + '<div id="timerBigNum" style="font-family:Cabinet Grotesk,sans-serif;font-size:min(40vw,180px);font-weight:900;color:#fff;line-height:1;transition:color .3s"></div>'
+    + '<div id="timerExName" style="font-size:13px;color:#555;margin-top:16px;letter-spacing:1px"></div>'
+    + '<div style="margin-top:40px;display:flex;gap:16px">'
+    +   '<button id="timerOvCancel" style="padding:14px 32px;border-radius:12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px">CANCEL</button>'
+    + '</div>'
+    + '<div style="font-size:10px;color:#333;margin-top:24px;letter-spacing:1px">TAP ANYWHERE TO DISMISS</div>';
+  ov.onclick = function(ev) {
+    if (ev.target === ov || ev.target.tagName === 'DIV') dismissTimerOverlay();
+  };
+  document.body.appendChild(ov);
+  timerOverlay = ov;
+
+  document.getElementById('timerOvCancel').onclick = function(ev) {
+    ev.stopPropagation();
+    stopRestTimer();
+    dismissTimerOverlay();
+  };
+
+  // Update loop
+  updateTimerOverlay();
+  timerOverlayInterval = setInterval(updateTimerOverlay, 250);
+}
+
+function updateTimerOverlay() {
+  if (!timerOverlay) return;
+  var big = document.getElementById('timerBigNum');
+  var exLabel = document.getElementById('timerExName');
+  if (!big) return;
+
+  if (!restTimerRunning && restTimerSeconds <= 0 && !restTimerExId) {
+    // Timer finished while overlay was up — show GO!
+    big.textContent = 'GO!';
+    big.style.color = '#22c55e';
+    if (exLabel) exLabel.textContent = '';
+    // Auto-dismiss after 3 seconds
+    setTimeout(function(){ dismissTimerOverlay(); }, 3000);
+    if (timerOverlayInterval) { clearInterval(timerOverlayInterval); timerOverlayInterval = null; }
+    return;
+  }
+
+  var secs = restTimerSeconds;
+  var mins = Math.floor(secs / 60);
+  var s = secs % 60;
+  var display = mins > 0 ? mins + ':' + (s < 10 ? '0' : '') + s : s + '';
+
+  big.textContent = display;
+  // Color shifts: blue → orange → red
+  if (secs <= 5) big.style.color = '#ef4444';
+  else if (secs <= 15) big.style.color = '#f97316';
+  else big.style.color = '#fff';
+
+  // Show exercise name
+  if (exLabel && restTimerExId) {
+    var exName = '';
+    for (var di = 0; di < PROGRAM.length; di++) {
+      for (var ei = 0; ei < PROGRAM[di].exercises.length; ei++) {
+        if (PROGRAM[di].exercises[ei].id === restTimerExId) {
+          exName = PROGRAM[di].exercises[ei].name;
+          break;
+        }
+      }
+      if (exName) break;
+    }
+    exLabel.textContent = exName;
+  }
+}
+
+function dismissTimerOverlay() {
+  if (timerOverlayInterval) { clearInterval(timerOverlayInterval); timerOverlayInterval = null; }
+  if (timerOverlay) {
+    timerOverlay.parentNode.removeChild(timerOverlay);
+    timerOverlay = null;
+  }
+}
+
+// Hook into startRestTimer — show overlay when timer starts
+(function() {
+  var origStart = startRestTimer;
+  window.startRestTimer = function(exId, seconds) {
+    origStart(exId, seconds);
+    showTimerOverlay();
+  };
+  var origStop = stopRestTimer;
+  window.stopRestTimer = function() {
+    origStop();
+    // Don't dismiss immediately — let updateTimerOverlay show "GO!"
+  };
+})();
+
+// ---------- 6. SESSION-SPECIFIC WARM-UP / STRETCH ----------
+var WARMUPS = {
+  'LEGS': {
+    title: 'LEG DAY WARM-UP',
+    time: '5–7 min',
+    steps: [
+      {name: 'Hip Circles', reps: '10 each direction', note: 'Loosen hip joint'},
+      {name: 'Bodyweight Squat', reps: '15 reps', note: 'Slow, full depth — open hips'},
+      {name: 'Walking Knee Hugs', reps: '10 each leg', note: 'Hip flexor + glute activation'},
+      {name: 'Leg Swings (front/back)', reps: '10 each leg', note: 'Dynamic hamstring stretch'},
+      {name: 'Leg Swings (lateral)', reps: '10 each leg', note: 'Adductor + abductor warm-up'},
+      {name: 'Glute Bridge', reps: '15 reps, 2-sec hold', note: 'Fire up glutes before squats'},
+      {name: 'Ankle Circles', reps: '10 each foot', note: 'Ankle mobility for squat depth'}
+    ]
+  },
+  'PUSH': {
+    title: 'PUSH DAY WARM-UP',
+    time: '5–6 min',
+    steps: [
+      {name: 'Arm Circles', reps: '15 forward, 15 back', note: 'Shoulder joint warm-up'},
+      {name: 'Band Pull-Apart', reps: '15 reps', note: 'Rear delt + rotator cuff activation'},
+      {name: 'Wall Slide', reps: '10 reps', note: 'Scapular mobility — arms up the wall'},
+      {name: 'Push-Up (slow)', reps: '10 reps', note: 'Full ROM, warm up pecs + tris'},
+      {name: 'Shoulder Pass-Through', reps: '10 reps', note: 'Use band or stick — open chest'},
+      {name: 'Wrist Circles', reps: '10 each direction', note: 'Prep wrists for pressing'}
+    ]
+  },
+  'PULL': {
+    title: 'PULL DAY WARM-UP',
+    time: '5–6 min',
+    steps: [
+      {name: 'Cat-Cow Stretch', reps: '10 reps', note: 'Mobilise thoracic spine'},
+      {name: 'Band Pull-Apart', reps: '15 reps', note: 'Rear delt + rotator cuff activation'},
+      {name: 'Dead Hang', reps: '20–30 sec', note: 'Decompress spine, stretch lats'},
+      {name: 'Scapular Pull-Up', reps: '8 reps', note: 'Activate scapular retractors'},
+      {name: 'Light Lat Pulldown', reps: '15 reps', note: 'High reps, feel the lats engage'},
+      {name: 'Wrist / Forearm Stretch', reps: '15 sec each', note: 'Prep grip for rows + curls'}
+    ]
+  },
+  'PUSH/PULL': {
+    title: 'SHOULDERS & ARMS WARM-UP',
+    time: '5–6 min',
+    steps: [
+      {name: 'Arm Circles', reps: '15 forward, 15 back', note: 'Full shoulder warm-up'},
+      {name: 'Band Pull-Apart', reps: '15 reps', note: 'Rear delt + rotator cuff'},
+      {name: 'Light Lateral Raise', reps: '15 reps', note: 'Wake up lateral delts'},
+      {name: 'Wrist Circles', reps: '10 each direction', note: 'Prep for curls + pressing'},
+      {name: 'Light Bicep Curl', reps: '15 reps', note: 'Blood flow to biceps + forearms'},
+      {name: 'Shoulder Pass-Through', reps: '10 reps', note: 'Open chest and shoulders'}
+    ]
+  }
+};
+
+function getWarmupForDay(dayData) {
+  var label = dayData.label || '';
+  if (label.indexOf('PUSH/PULL') !== -1) return WARMUPS['PUSH/PULL'];
+  if (label.indexOf('PUSH') !== -1) return WARMUPS['PUSH'];
+  if (label.indexOf('PULL') !== -1) return WARMUPS['PULL'];
+  if (label.indexOf('LEG') !== -1) return WARMUPS['LEGS'];
+  return WARMUPS['LEGS']; // fallback
+}
+
+var warmupOpen = false;
+
+function buildWarmupCard(dayData) {
+  var wu = getWarmupForDay(dayData);
+  var card = document.createElement('div');
+  card.className = 'card';
+  card.style.borderColor = 'rgba(251,191,36,0.3)';
+  card.style.marginBottom = '14px';
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0';
+  hdr.innerHTML = '<div><div style="font-size:9px;color:#fbbf24;letter-spacing:2px;margin-bottom:3px">' + wu.title + '</div>'
+    + '<div style="font-size:11px;color:#555">' + wu.time + ' · ' + wu.steps.length + ' movements</div></div>'
+    + '<span style="color:#555;font-size:12px">' + (warmupOpen ? '▲' : '▼') + '</span>';
+  hdr.onclick = function() {
+    warmupOpen = !warmupOpen;
+    renderTraining();
+  };
+  card.appendChild(hdr);
+
+  if (warmupOpen) {
+    var body = document.createElement('div');
+    body.style.cssText = 'margin-top:14px;border-top:1px solid rgba(255,255,255,0.05);padding-top:14px';
+    wu.steps.forEach(function(step, idx) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:12px';
+      row.innerHTML = '<div style="width:22px;height:22px;border-radius:50%;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fbbf24;flex-shrink:0;font-weight:700">' + (idx+1) + '</div>'
+        + '<div style="flex:1"><div style="font-size:12px;color:#ddd;font-weight:700;font-family:Cabinet Grotesk,sans-serif">' + step.name + ' <span style="color:#888;font-weight:400;font-size:11px">— ' + step.reps + '</span></div>'
+        + '<div style="font-size:10px;color:#555;margin-top:2px">' + step.note + '</div></div>';
+      body.appendChild(row);
+    });
+    card.appendChild(body);
+  }
+  return card;
+}
+
+// Patch renderTraining to inject warm-up card after the day info card
+(function() {
+  if (typeof renderTraining !== 'function') return;
+  var origRT = renderTraining;
+  window.renderTraining = function() {
+    origRT();
+    var container = document.getElementById('training-content');
+    if (!container) return;
+    var d = PROGRAM[currentDay];
+    var warmupCard = buildWarmupCard(d);
+    // Insert after the first child (the day info card)
+    var firstExCard = container.querySelector('.ex-card');
+    if (firstExCard) {
+      container.insertBefore(warmupCard, firstExCard);
+    } else {
+      container.appendChild(warmupCard);
+    }
+  };
+  // Re-render if already on training screen
+  var trn = document.getElementById('screen-training');
+  if (trn && trn.classList.contains('active')) window.renderTraining();
+})();
+
 // ---------- Patch renderAnalysis to include new sections ----------
 (function() {
   if (typeof renderAnalysis !== 'function') return;
