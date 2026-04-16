@@ -489,60 +489,138 @@ function parseRestSeconds(restStr) {
   return 90;
 }
 
-// Persistent AudioContext — unlocked on first user tap (iOS Safari requirement)
-var _audioCtx = null;
-function getAudioCtx() {
-  if (!_audioCtx) {
-    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+// ═══════════════════════════════════
+// AUDIO — dual approach for iOS PWA compatibility
+// Method 1: HTML5 Audio element (most reliable on iOS)
+// Method 2: Web Audio API fallback
+// ═══════════════════════════════════
+
+// Generate a short WAV beep as a data URI (two 880Hz beeps, 200ms each)
+var _beepAudio = null;
+var _audioUnlocked = false;
+
+function generateBeepWav() {
+  var sampleRate = 22050;
+  var freq = 880;
+  var beepDur = 0.2;
+  var gapDur = 0.15;
+  var totalDur = beepDur + gapDur + beepDur + 0.05;
+  var numSamples = Math.floor(sampleRate * totalDur);
+  var buffer = new ArrayBuffer(44 + numSamples * 2);
+  var view = new DataView(buffer);
+
+  // WAV header
+  function writeStr(offset, str) { for (var i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i)); }
+  writeStr(0,'RIFF');
+  view.setUint32(4, 36+numSamples*2, true);
+  writeStr(8,'WAVE');
+  writeStr(12,'fmt ');
+  view.setUint32(16,16,true);
+  view.setUint16(20,1,true);
+  view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*2,true);
+  view.setUint16(32,2,true);
+  view.setUint16(34,16,true);
+  writeStr(36,'data');
+  view.setUint32(40,numSamples*2,true);
+
+  // Generate samples: two beeps with a gap
+  for (var i=0;i<numSamples;i++){
+    var t=i/sampleRate;
+    var amp=0;
+    if (t<beepDur) {
+      amp=0.45*Math.sin(2*Math.PI*freq*t);
+      // Fade out last 20ms
+      if (t > beepDur-0.02) amp *= (beepDur-t)/0.02;
+    } else if (t>=beepDur+gapDur && t<beepDur+gapDur+beepDur) {
+      var t2=t-(beepDur+gapDur);
+      amp=0.45*Math.sin(2*Math.PI*freq*t2);
+      if (t2 > beepDur-0.02) amp *= (beepDur-t2)/0.02;
+    }
+    view.setInt16(44+i*2, Math.max(-32768,Math.min(32767,Math.round(amp*32767))), true);
   }
-  if (_audioCtx && _audioCtx.state === 'suspended') {
-    _audioCtx.resume();
-  }
-  return _audioCtx;
+
+  // Convert to base64 data URI
+  var bytes = new Uint8Array(buffer);
+  var binary = '';
+  for (var i=0;i<bytes.length;i++) binary += String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,' + btoa(binary);
 }
 
-// Unlock audio on very first tap anywhere — iOS Safari requires this
-document.addEventListener('touchstart', function unlockAudio() {
-  var ctx = getAudioCtx();
-  if (ctx) {
-    // Play a silent buffer to unlock
-    var buf = ctx.createBuffer(1, 1, 22050);
+function initBeepAudio() {
+  if (_beepAudio) return;
+  try {
+    _beepAudio = new Audio(generateBeepWav());
+    _beepAudio.volume = 1.0;
+    _beepAudio.preload = 'auto';
+  } catch(e) {}
+}
+
+// Unlock audio on first user interaction (iOS requires this)
+function unlockAudio() {
+  if (_audioUnlocked) return;
+  initBeepAudio();
+  if (_beepAudio) {
+    // Play silently to unlock the audio pipeline
+    _beepAudio.volume = 0.01;
+    var p = _beepAudio.play();
+    if (p && p.then) {
+      p.then(function(){
+        _beepAudio.pause();
+        _beepAudio.currentTime = 0;
+        _beepAudio.volume = 1.0;
+        _audioUnlocked = true;
+      }).catch(function(){});
+    }
+  }
+  // Also try Web Audio unlock
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var buf = ctx.createBuffer(1,1,22050);
     var src = ctx.createBufferSource();
     src.buffer = buf;
     src.connect(ctx.destination);
     src.start(0);
     ctx.resume();
-  }
-  document.removeEventListener('touchstart', unlockAudio);
-}, {once: true, passive: true});
+    window._backupAudioCtx = ctx;
+  } catch(e){}
+}
+
+document.addEventListener('touchstart', unlockAudio, {once:true, passive:true});
+document.addEventListener('click', unlockAudio, {once:true, passive:true});
 
 function playBeeps() {
+  // Method 1: HTML5 Audio (best iOS compatibility)
+  initBeepAudio();
+  if (_beepAudio) {
+    try {
+      _beepAudio.currentTime = 0;
+      _beepAudio.volume = 1.0;
+      var p = _beepAudio.play();
+      if (p && p.then) p.catch(function(){});
+    } catch(e){}
+  }
+  // Method 2: Web Audio API fallback
   try {
-    var ctx = getAudioCtx();
-    if (!ctx) return;
-    // Resume in case suspended (iOS)
-    var doBeep = function() {
-      function beep(startTime, freq, dur) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.4, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
-        osc.start(startTime);
-        osc.stop(startTime + dur);
-      }
-      beep(ctx.currentTime,        880, 0.2);
-      beep(ctx.currentTime + 0.32, 880, 0.2);
-    };
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(doBeep);
-    } else {
-      doBeep();
+    var ctx = window._backupAudioCtx;
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    function beep(startTime, freq, dur) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+      osc.start(startTime);
+      osc.stop(startTime + dur);
     }
-  } catch(e) {}
+    beep(ctx.currentTime, 880, 0.2);
+    beep(ctx.currentTime + 0.35, 880, 0.2);
+  } catch(e){}
 }
 
 function startRestTimer(exId, seconds) {
@@ -2068,12 +2146,29 @@ function updateTimerOverlay() {
   if (!big) return;
 
   if (!restTimerRunning && restTimerSeconds <= 0 && !restTimerExId) {
-    // Timer finished while overlay was up — show GO!
+    // Timer finished — dramatic GO! flash
     big.textContent = 'GO!';
     big.style.color = '#22c55e';
-    if (exLabel) exLabel.textContent = '';
-    // Auto-dismiss after 3 seconds
-    setTimeout(function(){ dismissTimerOverlay(); }, 3000);
+    big.style.textShadow = '0 0 40px rgba(34,197,94,0.8), 0 0 80px rgba(34,197,94,0.4)';
+    if (exLabel) exLabel.textContent = 'GET BACK UNDER THE BAR';
+    if (timerOverlay) {
+      // Flash the background bright then fade
+      timerOverlay.style.background = 'rgba(34,197,94,0.3)';
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 200);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(34,197,94,0.3)'; }, 400);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 600);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(34,197,94,0.2)'; }, 800);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 1000);
+    }
+    // Pulse the GO text
+    big.style.animation = 'none';
+    var style = document.createElement('style');
+    style.id = 'goFlashStyle';
+    style.textContent = '@keyframes goPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.7}}';
+    if (!document.getElementById('goFlashStyle')) document.head.appendChild(style);
+    big.style.animation = 'goPulse 0.6s ease-in-out infinite';
+    // Auto-dismiss after 4 seconds
+    setTimeout(function(){ dismissTimerOverlay(); }, 4000);
     if (timerOverlayInterval) { clearInterval(timerOverlayInterval); timerOverlayInterval = null; }
     return;
   }
@@ -2084,10 +2179,35 @@ function updateTimerOverlay() {
   var display = mins > 0 ? mins + ':' + (s < 10 ? '0' : '') + s : s + '';
 
   big.textContent = display;
-  // Color shifts: blue → orange → red
-  if (secs <= 5) big.style.color = '#ef4444';
-  else if (secs <= 15) big.style.color = '#f97316';
-  else big.style.color = '#fff';
+  big.style.textShadow = 'none';
+  big.style.animation = 'none';
+  // Color shifts: blue → orange → red + scale up in last 5s
+  if (secs <= 5) {
+    big.style.color = '#ef4444';
+    big.style.fontSize = 'min(50vw,220px)';
+    // Quick tick beep at 3, 2, 1
+    if (secs <= 3 && secs >= 1) {
+      try {
+        var ctx = window._backupAudioCtx;
+        if (ctx && ctx.state !== 'closed') {
+          if (ctx.state === 'suspended') ctx.resume();
+          var osc = ctx.createOscillator();
+          var g = ctx.createGain();
+          osc.connect(g); g.connect(ctx.destination);
+          osc.type = 'sine'; osc.frequency.value = 440;
+          g.gain.setValueAtTime(0.2, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.08);
+          osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.08);
+        }
+      } catch(e){}
+    }
+  } else if (secs <= 15) {
+    big.style.color = '#f97316';
+    big.style.fontSize = 'min(40vw,180px)';
+  } else {
+    big.style.color = '#fff';
+    big.style.fontSize = 'min(40vw,180px)';
+  }
 
   // Show exercise name
   if (exLabel && restTimerExId) {
