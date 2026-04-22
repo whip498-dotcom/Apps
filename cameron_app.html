@@ -143,10 +143,6 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
         <div class="section-title">SUBJECTIVE MARKERS</div>
         <div id="ci-sliders"></div>
       </div>
-      <div class="info-card">
-        <div class="info-title">📸 PROGRESS PHOTO</div>
-        <div class="info-body">Upload your photo in <strong style="color:#aaa">Claude chat</strong> weekly for body composition coaching.</div>
-      </div>
       <div class="card">
         <div class="section-title">NOTES</div>
         <textarea id="ci-notes" rows="3" placeholder="How has the week been? Injuries, stress, diet..."></textarea>
@@ -1218,11 +1214,6 @@ function renderAnalysis() {
       c.appendChild(div);
     });
   }
-  var photoCard=document.createElement('div');
-  photoCard.className='info-card';
-  photoCard.style.marginTop='12px';
-  photoCard.innerHTML='<div class="info-title">📸 PHOTO ANALYSIS</div><div class="info-body">Upload a progress photo in Claude chat with your weekly numbers for body composition coaching.</div>';
-  c.appendChild(photoCard);
 }
 
 // ═══════════════════════════════════
