@@ -113,10 +113,10 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
         <div style="display:flex;align-items:center;gap:10px">
-          <h1 style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px" id="header-title">Catalyst</h1>
-          <span class="tag tag-green" id="header-tag">LEAN BULK</span>
+          <h1 style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px" id="header-title">Cameron</h1>
+          <span class="tag tag-green" id="header-tag">WEDDING CUT</span>
         </div>
-        <div style="font-size:10px;color:#444;margin-top:2px" id="header-sub">Week 1 · 140mg Test E/week</div>
+        <div style="font-size:10px;color:#444;margin-top:2px" id="header-sub">Week 1 · 125mg Test E/week</div>
       </div>
       <div style="text-align:right" id="header-right"></div>
     </div>
@@ -132,7 +132,7 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
         <div class="section-title" id="checkin-week-label">WEEK 1 · WEIGHT</div>
         <span class="label">BODYWEIGHT (kg)</span>
         <div style="position:relative;margin-bottom:6px">
-          <input type="number" class="input-num" id="ci-weight" step="0.1" placeholder="79.9">
+          <input type="number" class="input-num" id="ci-weight" step="0.1" placeholder="85.0">
           <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:#555">kg</span>
         </div>
         <div id="ci-diff" style="font-size:10px;min-height:16px;margin-bottom:14px"></div>
@@ -174,6 +174,11 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
       <div id="nutrition-content"></div>
     </div>
 
+    <!-- REPORT SCREEN -->
+    <div class="screen" id="screen-report">
+      <div id="report-content"></div>
+    </div>
+
   </div>
 
   <!-- BOTTOM NAV -->
@@ -209,41 +214,47 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
 // ═══════════════════════════════════
 // PROGRAM DATA
 // ═══════════════════════════════════
+// Cameron's 4-day Upper/Lower split — upper-body bias for the wedding.
+// Each muscle 2x/week. Sessions 60-90 min. All IDs end in -c to keep logs isolated.
+// Block 1 (wks 1-2): submax sets — stop 2 reps shy of failure (2 RIR). Learn the movements.
+// Block 2 (wks 3-7): last set to 1 RIR. Add weight when top of rep range hit cleanly.
+// Wed + Sat: 30 min incline treadmill Zone 2 cardio (~120 bpm).
 var PROGRAM = [
-  { day:'Monday',   label:'PUSH',            color:'#22c55e', focus:'Chest, shoulders, triceps', note:'Program pending — Paul will update.', exercises:[
-    {id:'bench-press',    name:'Barbell Bench Press',     sets:4, reps:'6-8',   rest:'3 min',  inc:5,   cue:'Full ROM, drive through heels.'},
-    {id:'ohp',            name:'Overhead Press',          sets:4, reps:'8-10',  rest:'2.5 min',inc:2.5, cue:'Strict press, no leg drive.'},
-    {id:'incline-db-c',   name:'Incline DB Press',        sets:3, reps:'10-12', rest:'2 min',  inc:2.5, cue:'30 incline, full stretch at bottom.'},
-    {id:'cable-lat-c',    name:'Cable Lateral Raise',     sets:4, reps:'15-20', rest:'60 sec', inc:2.5, cue:'Lead with elbows, constant tension.'},
-    {id:'tri-push-c',     name:'Tricep Pushdown',         sets:3, reps:'12-15', rest:'90 sec', inc:2.5, cue:'Elbows pinned. Full extension.'},
+  { day:'Monday',   label:'UPPER A — Chest & Back',      color:'#f97316', focus:'Chest, lats, mid-back, triceps, biceps', note:'Block 1: build technique, 2 RIR on all sets. Block 2: push last set to 1 RIR. Add weight when you hit top of rep range on all sets cleanly.', exercises:[
+    {id:'incline-db-c',    name:'Incline DB Press',         sets:4, reps:'6-8',   rest:'3 min',  inc:2.5, cue:'30 degree bench. Full stretch at bottom, press to lockout. Lead movement — go heaviest here.'},
+    {id:'chest-row-c',     name:'Chest-Supported Row',      sets:4, reps:'8-10',  rest:'2 min',  inc:5,   cue:'Squeeze shoulder blades, elbows drive back. 1-sec squeeze at top.'},
+    {id:'machine-press-c', name:'Flat Machine Chest Press', sets:3, reps:'10-12', rest:'90 sec', inc:5,   cue:'Controlled tempo (2 sec down). Full ROM, no bouncing.'},
+    {id:'lat-pulldown-c',  name:'Wide Lat Pulldown',        sets:3, reps:'10-12', rest:'90 sec', inc:5,   cue:'Wide grip. Pull to upper chest, lead with elbows down and back.'},
+    {id:'cable-fly-c',     name:'Cable Chest Fly',          sets:3, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Slight bend in elbows, squeeze at midline. Constant tension.'},
+    {id:'face-pull-c',     name:'Face Pull',                sets:3, reps:'15-20', rest:'60 sec', inc:2.5, cue:'Rope to forehead, elbows high and wide. Rear delts + postural insurance.'},
+    {id:'tri-rope-c',      name:'Triceps Rope Pushdown',    sets:3, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Elbows pinned to ribs. Spread rope at bottom, full lockout.'},
+    {id:'hammer-curl-c',   name:'Hammer Curl',              sets:3, reps:'10-12', rest:'60 sec', inc:2.5, cue:'Neutral grip, no swing. Builds brachialis for arm thickness.'},
   ]},
-  { day:'Tuesday',  label:'PULL',            color:'#3b82f6', focus:'Back, biceps, rear delts', note:'Program pending — Paul will update.', exercises:[
-    {id:'pull-up-c',      name:'Pull-Up',                 sets:4, reps:'6-8',   rest:'3 min',  inc:2.5, cue:'Full hang to chin over bar.'},
-    {id:'bb-row-c',       name:'Barbell Row',             sets:4, reps:'8-10',  rest:'2.5 min',inc:5,   cue:'Chest to bar, squeeze shoulder blades.'},
-    {id:'cable-row-c',    name:'Seated Cable Row',        sets:3, reps:'10-12', rest:'2 min',  inc:5,   cue:'Wide grip, pull to lower chest.'},
-    {id:'face-pull-c',    name:'Face Pull',               sets:4, reps:'15-20', rest:'60 sec', inc:2.5, cue:'Elbows high, rope to forehead.'},
-    {id:'bb-curl-c',      name:'Barbell Curl',            sets:3, reps:'10-12', rest:'90 sec', inc:2.5, cue:'No swing. Full extension.'},
+  { day:'Tuesday',  label:'LOWER A — Quad Focus',        color:'#22c55e', focus:'Quads, glutes, calves, core', note:'Warm up thoroughly (2-3 light sets on first lift). Quad-dominant day. Block 1: tolerance + form. Block 2: push intensity.', exercises:[
+    {id:'leg-press-c',     name:'Leg Press',                sets:4, reps:'10-12', rest:'2 min',  inc:10,  cue:'Feet shoulder-width, mid-platform. Full range, don\'t bounce off the stops.'},
+    {id:'bulgarian-c',     name:'Bulgarian Split Squat',    sets:3, reps:'10-12', rest:'90 sec', inc:2.5, cue:'DBs at sides, rear foot elevated on bench. Drive through front mid-foot.'},
+    {id:'leg-ext-c',       name:'Leg Extension',            sets:3, reps:'12-15', rest:'60 sec', inc:5,   cue:'Full lockout, 2-sec squeeze at top. Last set: rest-pause for extra reps in Block 2.'},
+    {id:'rdl-c',           name:'Romanian Deadlift',        sets:3, reps:'10-12', rest:'2 min',  inc:5,   cue:'Hinge at hips, bar close to shins. Stop when you feel full hamstring stretch.'},
+    {id:'calf-seated-c',   name:'Seated Calf Raise',        sets:3, reps:'15-20', rest:'60 sec', inc:5,   cue:'Hits soleus. Full stretch at bottom, 1-sec pause at top.'},
+    {id:'knee-raise-c',    name:'Hanging Knee Raise',       sets:3, reps:'12-15', rest:'60 sec', inc:0,   cue:'Curl pelvis up — don\'t swing. Exhale at the top.'},
   ]},
-  { day:'Wednesday',label:'LEGS',            color:'#f97316', focus:'Quads, hamstrings, calves', note:'Program pending — Paul will update.', exercises:[
-    {id:'squat-c',        name:'Barbell Back Squat',      sets:4, reps:'6-8',   rest:'3 min',  inc:5,   cue:'Break at hips and knees together, full depth.'},
-    {id:'rdl-c',          name:'Romanian Deadlift',       sets:4, reps:'10-12', rest:'2 min',  inc:5,   cue:'Hinge at hips, bar close to shins.'},
-    {id:'leg-press-c',    name:'Leg Press',               sets:3, reps:'10-15', rest:'2 min',  inc:10,  cue:'Feet high for hamstrings, low for quads.'},
-    {id:'leg-curl-c',     name:'Leg Curl',                sets:3, reps:'12-15', rest:'90 sec', inc:2.5, cue:'Slow negative, squeeze at top.'},
-    {id:'calf-raise-c',   name:'Standing Calf Raise',     sets:4, reps:'12-15', rest:'60 sec', inc:5,   cue:'Full range, pause at top.'},
+  { day:'Thursday', label:'UPPER B — Shoulders & Arms',  color:'#a855f7', focus:'Delts, arms — WEDDING DAY', note:'The wedding-day session. High-volume pump work for delts and arms. These are the muscles that show in a suit.', exercises:[
+    {id:'db-ohp-c',        name:'Seated DB Shoulder Press', sets:4, reps:'8-10',  rest:'2.5 min',inc:2.5, cue:'Seated, back supported. Full stretch at shoulder level, press to lockout.'},
+    {id:'lat-raise-c',     name:'DB Lateral Raise',         sets:4, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Slight forward lean, lead with elbows. Control the descent — no swing.'},
+    {id:'rear-fly-c',      name:'Cable Rear Delt Fly',      sets:3, reps:'15-20', rest:'60 sec', inc:2.5, cue:'Cables at face height. Squeeze rear delts hard. Builds 3D shoulder look.'},
+    {id:'incline-curl-c',  name:'Incline DB Curl',          sets:3, reps:'10-12', rest:'90 sec', inc:2.5, cue:'Arms hang back behind torso. Full stretch — best position for bicep peak.'},
+    {id:'cable-curl-c',    name:'Cable Curl (Straight Bar)', sets:3, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Step forward slightly. Constant tension top to bottom.'},
+    {id:'oh-tri-c',        name:'Overhead Triceps Ext.',    sets:3, reps:'10-12', rest:'90 sec', inc:2.5, cue:'Rope or EZ-bar. Full stretch overhead — hits the long head (most visible).'},
+    {id:'tri-push-c',      name:'Triceps Pushdown',         sets:3, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Elbows pinned, full extension, squeeze lockout 1 sec.'},
+    {id:'side-plank-c',    name:'Side Plank',               sets:3, reps:'30-45s', rest:'30 sec', inc:0,   cue:'Both sides each set. Core tight, hips high. Bracing practice.'},
   ]},
-  { day:'Thursday', label:'UPPER',           color:'#a855f7', focus:'Chest, back, arms', note:'Program pending — Paul will update.', exercises:[
-    {id:'db-press-c',     name:'Flat DB Press',           sets:4, reps:'8-10',  rest:'2.5 min',inc:2.5, cue:'Full stretch at bottom.'},
-    {id:'db-row-c',       name:'Single Arm DB Row',       sets:4, reps:'10-12', rest:'90 sec', inc:2.5, cue:'Drive elbow to hip.'},
-    {id:'lat-raise-c',    name:'Lateral Raise',           sets:4, reps:'15-20', rest:'60 sec', inc:2.5, cue:'Slight forward lean, lead with elbows.'},
-    {id:'hammer-curl-c',  name:'Hammer Curl',             sets:3, reps:'12-15', rest:'90 sec', inc:2.5, cue:'Neutral grip, no swing.'},
-    {id:'oh-tri-c',       name:'Overhead Tricep Ext.',    sets:3, reps:'12-15', rest:'90 sec', inc:2.5, cue:'Full stretch overhead.'},
-  ]},
-  { day:'Friday',   label:'LOWER + CORE',    color:'#22c55e', focus:'Legs, abs', note:'Program pending — Paul will update.', exercises:[
-    {id:'front-squat-c',  name:'Front Squat',             sets:4, reps:'6-8',   rest:'3 min',  inc:5,   cue:'Elbows high, sit straight down.'},
-    {id:'walking-lunge-c',name:'Walking Lunge',           sets:3, reps:'12-16', rest:'90 sec', inc:2.5, cue:'Long stride, back knee to floor.'},
-    {id:'leg-ext-c',      name:'Leg Extension',           sets:3, reps:'15-20', rest:'60 sec', inc:5,   cue:'Full lockout, 2-sec hold at top.'},
-    {id:'leg-curl-ly-c',  name:'Lying Leg Curl',          sets:3, reps:'12-15', rest:'90 sec', inc:2.5, cue:'Don\'t lift hips.'},
-    {id:'cable-crunch-c', name:'Cable Crunch',            sets:3, reps:'15-20', rest:'60 sec', inc:5,   cue:'Hinge at spine, exhale hard.'},
+  { day:'Friday',   label:'LOWER B — Posterior Chain',   color:'#22c55e', focus:'Glutes, hamstrings, calves, abs', note:'Hip-hinge dominant. Builds the posterior chain — critical for pants fit, posture, and a strong-looking profile.', exercises:[
+    {id:'hip-thrust-c',    name:'Barbell Hip Thrust',       sets:4, reps:'8-10',  rest:'2 min',  inc:5,   cue:'Upper back on bench, drive through heels. Full lockout — squeeze glutes hard at top.'},
+    {id:'leg-curl-c',      name:'Seated Leg Curl',          sets:4, reps:'10-12', rest:'90 sec', inc:2.5, cue:'Full extension, explosive curl, 3-sec negative.'},
+    {id:'walking-lunge-c', name:'Walking Lunge (DB)',       sets:3, reps:'10/leg', rest:'90 sec', inc:2.5, cue:'Long stride, back knee nearly touches ground. DBs at sides.'},
+    {id:'back-ext-c',      name:'Back Extension',           sets:3, reps:'12-15', rest:'60 sec', inc:2.5, cue:'Glutes and hamstrings drive — not lower back. Pause at top.'},
+    {id:'calf-standing-c', name:'Standing Calf Raise',      sets:4, reps:'12-15', rest:'60 sec', inc:5,   cue:'Load heavy. Full range — stretch at bottom, pause at top.'},
+    {id:'cable-crunch-c',  name:'Cable Crunch',             sets:3, reps:'15-20', rest:'60 sec', inc:5,   cue:'Hinge at spine not hips. Exhale hard at the bottom. Weighted abs show up in photos.'},
   ]},
 ];
 
@@ -425,7 +436,7 @@ function initCheckin() {
 
 function updateCheckinWeekLabel() {
   document.getElementById('checkin-week-label').textContent = 'WEEK ' + (checkins.length+1) + ' · WEIGHT';
-  document.getElementById('header-sub').textContent = 'Week ' + (checkins.length+1) + ' · 140mg Test E/week';
+  document.getElementById('header-sub').textContent = 'Week ' + (checkins.length+1) + ' · 125mg Test E/week';
 }
 
 function onWeightInput() {
@@ -1250,16 +1261,130 @@ var NUT_TYPE_COLOR = {
 };
 
 var NUT_BLOCKS = [
-  {id:1, label:'Block 1', weeks:'TBD', cal:0, p:0, c:0, f:0, color:'#ef4444',
-   note:'Nutrition plan pending. Paul will set this up based on your check-in data.'},
+  {id:1, label:'Block 1 — Priming', weeks:'Weeks 1-2', cal:2227, p:197, c:206, f:68, color:'#ef4444',
+   note:'Priming phase. Moderate deficit (~300 kcal). Adapting to TRT onset and building habits. Same 4 meals every day — minimum prep. All weights RAW. Weigh before cooking. Liver-friendly: no alcohol, omega-3 daily. Move to Block 2 after week 2 regardless of weight.'},
+  {id:2, label:'Block 2 — Wedding Cut', weeks:'Weeks 3-7', cal:1903, p:191, c:149, f:60, color:'#22c55e',
+   note:'Wedding cut. Deeper deficit (~650 kcal). Same meals as Block 1 with reduced portions (less oats/rice/potato/banana/oil). Protein stays high to preserve muscle during fat loss. All weights RAW. Target: 0.7-1.0 kg/week loss.'},
 ];
 
+// Cameron eats the same 4 meals every day — easy prep, predictable macros.
+// All weights RAW. FSANZ-aligned macros. Daily totals 4-4-9 verified.
+// Block 1 daily: 197.05 P / 206.05 C / 68.29 F / 2,227 kcal
+var CAM_B1_MEALS = [
+  {type:'Breakfast', name:'Protein Oats Bowl',
+   desc:'60g rolled oats (raw) cooked in water with cinnamon. Stir 30g whey isolate through cooked oats. Top with 1 whole egg + 100g egg whites scrambled (non-stick pan, no oil) + 100g blueberries + 10g raw almonds (crushed).',
+   cal:542, p:52.80, c:47.38, f:15.69, prep:'8 min'},
+  {type:'Lunch', name:'Chicken & Rice Stir-Fry',
+   desc:'180g chicken breast (raw) + 80g basmati rice (dry) + 100g broccoli + 75g red capsicum + 75g carrot, stir-fried in 8g olive oil with soy sauce, garlic, chilli, ginger. Batch cook Sunday + Wednesday.',
+   cal:604, p:51.63, c:72.23, f:12.12, prep:'Batch cook'},
+  {type:'Pre-Workout', name:'Yogurt & Banana Bowl',
+   desc:'200g Chobani Plain 0% Greek yogurt + 25g whey isolate (stirred through) + 150g banana (sliced) + 15g raw almonds. Eat 60-90 min before gym.',
+   cal:424, p:45.83, c:39.70, f:9.14, prep:'2 min'},
+  {type:'Dinner', name:'Baked Salmon, Potato & Broccoli',
+   desc:'180g Atlantic salmon (raw) baked at 200C for 12-14 min with lemon and herbs. 250g white potato (raw, roasted or steamed) drizzled with 5g olive oil. 150g broccoli steamed. Side salad: 50g mixed salad leaves + 100g tomato with lemon juice.',
+   cal:656, p:46.80, c:46.75, f:31.35, prep:'25 min'},
+];
+
+// Block 2 daily: 190.53 P / 149.35 C / 60.39 F / 1,903 kcal
+var CAM_B2_MEALS = [
+  {type:'Breakfast', name:'Protein Oats Bowl',
+   desc:'40g rolled oats (raw) cooked in water with cinnamon. Stir 30g whey isolate through cooked oats. Top with 1 whole egg + 100g egg whites scrambled (no oil) + 100g blueberries + 10g raw almonds.',
+   cal:473, p:50.30, c:35.78, f:14.29, prep:'8 min'},
+  {type:'Lunch', name:'Chicken & Rice Stir-Fry',
+   desc:'180g chicken breast (raw) + 50g basmati rice (dry) + 100g broccoli + 75g red capsicum + 75g carrot, stir-fried in 7g olive oil with soy sauce, garlic, chilli, ginger. Batch cook Sunday + Wednesday.',
+   cal:492, p:49.38, c:49.13, f:10.88, prep:'Batch cook'},
+  {type:'Pre-Workout', name:'Yogurt & Banana Bowl',
+   desc:'200g Chobani Plain 0% Greek yogurt + 25g whey isolate (stirred through) + 80g banana (sliced) + 15g raw almonds. Eat 60-90 min before gym.',
+   cal:363, p:45.06, c:25.70, f:8.93, prep:'2 min'},
+  {type:'Dinner', name:'Baked Salmon, Potato & Broccoli',
+   desc:'180g Atlantic salmon (raw) baked at 200C for 12-14 min with lemon and herbs. 200g white potato (raw, roasted or steamed — NO oil). 150g broccoli steamed. Side salad: 50g mixed salad leaves + 100g tomato with lemon juice.',
+   cal:575, p:45.80, c:38.75, f:26.30, prep:'25 min'},
+];
+
+// Same 4 meals every day of the week, both blocks.
 var NUT_PLANS = {
-  1: { training:[], rest:[] }
+  1: {Monday:CAM_B1_MEALS, Tuesday:CAM_B1_MEALS, Wednesday:CAM_B1_MEALS, Thursday:CAM_B1_MEALS, Friday:CAM_B1_MEALS, Saturday:CAM_B1_MEALS, Sunday:CAM_B1_MEALS},
+  2: {Monday:CAM_B2_MEALS, Tuesday:CAM_B2_MEALS, Wednesday:CAM_B2_MEALS, Thursday:CAM_B2_MEALS, Friday:CAM_B2_MEALS, Saturday:CAM_B2_MEALS, Sunday:CAM_B2_MEALS},
 };
 
+// Weekly shopping lists — grams exactly match daily meal plan x 7, verified in verify_macros.py.
 var NUT_SHOPPING = {
-  1: []
+  1:[
+    {cat:'Protein', items:[
+      'Chicken breast — 1.5 kg tray (need 1,260g raw/week)',
+      'Atlantic salmon — 7 x 180g portions (1.26 kg/week)',
+      'Whole eggs — 1 dozen carton (need 7/week)',
+      'Liquid egg whites — 1 L carton, e.g. Abbey\'s (need 700g/week)',
+      'Whey protein isolate — 1 kg tub (need 385g/week, ~2.5 week supply)',
+      'Chobani Plain 0% Greek yogurt — 2 x 900g tubs (need 1,400g/week)',
+    ]},
+    {cat:'Carbs & Grains', items:[
+      'Rolled oats — 500g bag (need 420g/week)',
+      'Basmati rice — 1 kg bag (need 560g/week dry)',
+      'White potato — 2 kg bag (need 1,750g/week)',
+      'Bananas — 9-10 small (need 1,050g/week)',
+      'Blueberries — 2 x 350g punnets OR 700g frozen (need 700g/week)',
+    ]},
+    {cat:'Vegetables', items:[
+      'Broccoli — 3-4 large heads (need 1,750g/week)',
+      'Red capsicum — 4 medium (need 525g/week)',
+      'Carrot — 1 x 1 kg bag (need 525g/week)',
+      'Mixed salad leaves — 2 x 200g bags (need 350g/week)',
+      'Tomato — 5-6 medium (need 700g/week)',
+    ]},
+    {cat:'Fats & Pantry', items:[
+      'Olive oil — 500ml bottle lasts weeks (need 91g/week)',
+      'Raw almonds — 500g bag (need 175g/week)',
+      'Lemons x2',
+      'Soy sauce, garlic, chilli, ginger, cinnamon, salt, pepper, dried herbs (restock as needed)',
+    ]},
+    {cat:'Supplements (Cam) — discuss with TRT doctor', items:[
+      'Omega-3 fish oil — 2-3g EPA+DHA daily (liver, lipids, CRP)',
+      'Creatine monohydrate — 5g daily, any time',
+      'Psyllium husk — 10g before dinner (LDL, glucose)',
+      'Magnesium glycinate — 300-400mg before bed (sleep, glucose)',
+      'Vitamin D3 — test levels first, then likely 2,000-5,000 IU/day',
+      'Avoid high-dose niacin & stimulant pre-workouts while ALT elevated',
+    ]},
+  ],
+  2:[
+    {cat:'Protein', items:[
+      'Chicken breast — 1.5 kg tray (need 1,260g raw/week)',
+      'Atlantic salmon — 7 x 180g portions (1.26 kg/week)',
+      'Whole eggs — 1 dozen carton (need 7/week)',
+      'Liquid egg whites — 1 L carton (need 700g/week)',
+      'Whey protein isolate — 385g/week (continue from Block 1 tub)',
+      'Chobani Plain 0% Greek yogurt — 2 x 900g tubs (need 1,400g/week)',
+    ]},
+    {cat:'Carbs & Grains', items:[
+      'Rolled oats — 500g bag (need 280g/week)',
+      'Basmati rice — 1 kg bag (need 350g/week dry)',
+      'White potato — 1.5 kg bag (need 1,400g/week)',
+      'Bananas — 5-6 small (need 560g/week)',
+      'Blueberries — 2 x 350g punnets OR 700g frozen (need 700g/week)',
+    ]},
+    {cat:'Vegetables', items:[
+      'Broccoli — 3-4 large heads (need 1,750g/week)',
+      'Red capsicum — 4 medium (need 525g/week)',
+      'Carrot — 1 x 1 kg bag (need 525g/week)',
+      'Mixed salad leaves — 2 x 200g bags (need 350g/week)',
+      'Tomato — 5-6 medium (need 700g/week)',
+    ]},
+    {cat:'Fats & Pantry', items:[
+      'Olive oil — (need 49g/week — dinner oil dropped)',
+      'Raw almonds — 500g bag (need 175g/week)',
+      'Lemons x2',
+      'Soy sauce, garlic, chilli, ginger, cinnamon, salt, pepper, dried herbs',
+    ]},
+    {cat:'Supplements (Cam)', items:[
+      'Omega-3 fish oil — 2-3g EPA+DHA daily',
+      'Creatine monohydrate — 5g daily',
+      'Psyllium husk — 10g before dinner',
+      'Magnesium glycinate — 300-400mg PM',
+      'Vitamin D3 — continue from testing',
+      'Continue avoiding high-dose niacin & heavy stimulants',
+    ]},
+  ],
 };
 
 // ═══════════════════════════════════
@@ -1366,7 +1491,7 @@ function renderNutPlan(c, block) {
   // Raw weight note
   var rawNote = document.createElement('div');
   rawNote.style.cssText = 'background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.2);border-radius:10px;padding:10px 14px;margin-top:6px';
-  rawNote.innerHTML = '<div style="font-size:9px;color:#eab308;letter-spacing:2px;margin-bottom:4px">⚖️ ALL WEIGHTS ARE RAW</div><div style="font-size:11px;color:#888;line-height:1.7">Rump steak loses ~25-30% when cooked. 250g raw → ~175g cooked. Weigh everything before cooking for accuracy.</div>';
+  rawNote.innerHTML = '<div style="font-size:9px;color:#eab308;letter-spacing:2px;margin-bottom:4px">⚖️ ALL WEIGHTS ARE RAW</div><div style="font-size:11px;color:#888;line-height:1.7">Chicken and salmon both lose ~20-25% when cooked. Rice and potato go UP in weight after cooking (water absorption). Always weigh RAW — macros are calculated on raw FSANZ values. Weighing cooked will underestimate your intake.</div>';
   c.appendChild(rawNote);
 }
 
@@ -1400,12 +1525,9 @@ function buildMealCard(meal, idx, color) {
 }
 
 function renderNutShopping(c, block) {
-  var rumpKg = block.id===1?'3.5':block.id===2?'3.9':block.id===3?'4.2':'4.5';
-  var rumpCost = block.id===1?'~$70':block.id===2?'~$78':block.id===3?'~$84':'~$90';
-
   var noteDiv = document.createElement('div');
   noteDiv.style.cssText = 'background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 14px;margin-bottom:14px';
-  noteDiv.innerHTML = '<div style="font-size:9px;color:#22c55e;letter-spacing:2px;margin-bottom:4px">🥩 RUMP STEAK DEAL — $19.99/kg</div><div style="font-size:11px;color:#888;line-height:1.7">Buy '+rumpKg+'kg this week ('+rumpCost+') — covers 7 dinners for 2. Tuesday keep salmon for omega-3s to help manage elevated E2.</div>';
+  noteDiv.innerHTML = '<div style="font-size:9px;color:#22c55e;letter-spacing:2px;margin-bottom:4px">🛒 ' + (block.label||'BLOCK').toUpperCase() + ' — WEEKLY SHOP</div><div style="font-size:11px;color:#888;line-height:1.7">Quantities below match the meal plan exactly (daily x 7). Salmon 4x/week is deliberate — omega-3s help move LDL, triglycerides and liver enzymes the right way. Batch cook Sunday + Wednesday to keep prep to ~30 min/week.</div>';
   c.appendChild(noteDiv);
 
   var shopList = NUT_SHOPPING[block.id]||[];
@@ -1433,7 +1555,7 @@ function renderNutShopping(c, block) {
 
 function renderNutBlocks(c) {
   var title = document.createElement('div');
-  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Reverse Diet Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">From 1,900 cal → lean bulk target over 7 weeks</div>';
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Wedding Prep Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">7-week cut — Block 1 priming → Block 2 wedding cut</div>';
   c.appendChild(title);
 
   NUT_BLOCKS.forEach(function(b, i) {
@@ -1459,10 +1581,10 @@ function renderNutBlocks(c) {
     c.appendChild(card);
   });
 
-  var e2Note = document.createElement('div');
-  e2Note.style.cssText = 'background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin-top:6px';
-  e2Note.innerHTML = '<div style="font-size:10px;color:#ef4444;letter-spacing:2px;margin-bottom:6px;font-weight:700">⚠️ BLOODWORK FLAG</div><div style="font-size:11px;color:#888;line-height:1.8">Your E2 is elevated at 252 pmol/L (ref &lt;150). High oestradiol increases fat storage and water retention, masking lean bulk progress. Address this with an AI before Block 4 for cleaner results.</div>';
-  c.appendChild(e2Note);
+  var bwNote = document.createElement('div');
+  bwNote.style.cssText = 'background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin-top:6px';
+  bwNote.innerHTML = '<div style="font-size:10px;color:#ef4444;letter-spacing:2px;margin-bottom:6px;font-weight:700">⚠️ BLOODWORK PRIORITIES</div><div style="font-size:11px;color:#888;line-height:1.8">Liver markers elevated (ALT 128, AST 66, GGT 83) — consistent with NAFLD. Fat loss is the primary lever. Fasting glucose 5.7 — borderline. LDL 4.5 / Total chol 6.6 / Trigs 2.0 — atherogenic pattern. The meal plan, omega-3 supplement and weight loss will improve all of these. Zero alcohol during Block 1. Retest bloods at 8 weeks. Discuss any medication questions with your TRT prescriber.</div>';
+  c.appendChild(bwNote);
 }
 
 
@@ -1470,52 +1592,54 @@ function renderNutBlocks(c) {
 function renderNutProtocol(c) {
   var sections = [
     { title:'⏱ MEAL TIMING', color:'#3b82f6', items:[
-      '6:00am — Breakfast: High protein + carbs. Start MPS (muscle protein synthesis) early.',
-      '9:30am — Mid-morning: Protein bridge between meals. Never skip — keeps MPS elevated.',
-      '12:30pm — Pre-workout meal: 1.5-2hrs before gym session. Carb-heavy for fuel.',
-      'Post-gym — Shake within 30 min of session. Non-negotiable. This is your most important meal.',
-      '7:00pm — Dinner with partner: Largest meal of the day. High protein + carbs.',
-      '10:00pm — Casein shake: Slow-release protein overnight. Protects muscle during sleep.',
+      '7:00am — M1 Breakfast: Protein oats bowl. Starts protein synthesis and stabilises morning glucose.',
+      '12:30pm — M2 Lunch: Chicken & rice stir-fry (batch cooked). Main carb meal of the day.',
+      '4:00pm — M3 Pre-workout: Yogurt, whey, banana, almonds. Eat 60-90 min before gym.',
+      '5:30-7:00pm — Training session (60-90 min). Water only during; BCAA/EAA optional.',
+      '7:30pm — M4 Dinner: Baked salmon, potato, broccoli, salad.',
+      'No calories after dinner. Water, black tea/coffee, zero-cal drinks only.',
     ]},
-    { title:'💊 KEY SUPPLEMENTS', color:'#22c55e', items:[
-      'Whey protein — 2 scoops post-workout + 1 scoop in meals as needed.',
-      'Casein protein — 1.5 scoops before bed every night without exception.',
-      'Creatine monohydrate — 5g daily. Timing does not matter. Take it every day.',
-      'Fish oil — 3-5g EPA/DHA daily. Helps manage inflammation and your elevated E2.',
-      'Vitamin D3 + K2 — 5,000 IU daily. Supports hormone production and immune function.',
-      'Zinc + Magnesium (ZMA) — Before bed. Improves sleep quality and supports testosterone.',
+    { title:'💊 KEY SUPPLEMENTS — discuss with TRT doctor', color:'#22c55e', items:[
+      'Omega-3 fish oil — 2-3g EPA+DHA daily. Priority: liver, lipids, CRP.',
+      'Creatine monohydrate — 5g daily, any time. Take every day.',
+      'Psyllium husk — 10g stirred in water before dinner. Lowers LDL and flattens glucose.',
+      'Magnesium glycinate — 300-400mg before bed. Sleep and glucose control.',
+      'Vitamin D3 — test levels first, then likely 2,000-5,000 IU/day.',
+      'Whey protein isolate — already in the meal plan (85g/day across M1 + M3).',
+      '⚠️ AVOID high-dose niacin and stimulant pre-workouts while ALT is elevated.',
     ]},
-    { title:'💉 PROTOCOL — 140mg TEST E/WEEK', color:'#a855f7', items:[
-      'Current dose: 40mg Test E every 2 days (~140mg/week) — TRT/cruise range.',
-      'Your total testosterone is at 26.5 nmol/L — near top of reference range. Well managed.',
-      'SHBG at 20 nmol/L — low-normal, meaning more free active testosterone. Favourable.',
-      '⚠️ E2 ELEVATED: 252 pmol/L vs reference <150. This is the primary thing to address.',
-      'High E2 causes water retention, increased fat storage, and mood sensitivity.',
-      'Theoretical fix: Low-dose AI (Anastrozole 0.25mg 2x/week or Exemestane 12.5mg 2x/week).',
-      'Target E2 range: 80-130 pmol/L — do NOT crash it completely.',
-      'Consider daily injections (20mg/day) vs EOD to reduce peak-to-trough swing and aromatisation.',
-      'Get bloodwork every 8-12 weeks — non-negotiable for long-term health monitoring.',
+    { title:'💉 TRT PROTOCOL — 125mg/WEEK (start)', color:'#a855f7', items:[
+      'Starting dose: 125mg Test E per week — split across 2 shots (e.g. Mon + Thu ~62mg each) to smooth peaks.',
+      'Baseline: Total T 17.2 nmol/L, SHBG 9 (low), Free T 496 pmol/L (mid-range).',
+      'Expect: SHBG to rise as insulin resistance improves with fat loss. Free T to normalise.',
+      'Re-test at 8 weeks: full hormone panel + lipids + LFTs + HbA1c.',
+      '⚠️ Liver markers elevated (ALT 128, AST 66, GGT 83) — consistent with NAFLD. Fat loss is the primary fix.',
+      '⚠️ Fasting glucose 5.7 — borderline. Request HbA1c at next bloods.',
+      'LDL 4.5 / Total chol 6.6 / Trigs 2.0 — omega-3 + fibre + fat loss should move these fast.',
+      'If E2 becomes symptomatic (heavy bloat, mood swings), discuss low-dose AI with TRT doc — do NOT self-prescribe.',
+      'Do not adjust TRT dose based on how you feel in week 1 — steady state takes 4-6 weeks.',
     ]},
     { title:'💧 HYDRATION', color:'#06b6d4', items:[
-      'Minimum 4L water daily — enhanced compounds increase hydration needs.',
-      'Add electrolytes if training sessions exceed 60 minutes.',
-      'Creatine pulls water into muscle cells — extra hydration is essential.',
-      'Limit alcohol — directly impairs protein synthesis and recovery. Worse on cycle.',
+      'Target 3.5-4L water daily.',
+      'Electrolytes (sodium + potassium) on training days, especially early in the cut.',
+      'Creatine pulls water into muscle — hydrate well.',
+      '⚠️ ZERO alcohol during Block 1 (2 weeks). Minimal in Block 2 — every drink taxes an already-stressed liver.',
     ]},
     { title:'🛌 RECOVERY', color:'#f97316', items:[
-      '7-8 hrs sleep minimum — GH pulses occur during sleep. This is when you actually grow.',
-      'Your 6am wake-up means trading past midnight DIRECTLY cuts muscle growth.',
-      'Hard screen cut-off at 12:15am on trading nights — protect sleep above most things.',
-      'Deload every 6-8 weeks — joints and CNS need it even on cycle.',
-      'Two leg sessions per week (Mon + Thu) is the biggest single change for your physique.',
+      '7-8 hrs sleep every night — TRT response and fat loss both depend on it.',
+      'Walk 9,000+ steps daily (non-training). Single biggest lever for liver enzymes + lipids outside the diet.',
+      'Zone 2 cardio: Wed + Sat, 30 min incline treadmill walk (~120 bpm).',
+      'Screen curfew 10:30pm, lights out 11:00pm.',
+      'No planned deload in the 7-week block unless pain flares — the program is calibrated to intensify over time, not to grind you down.',
     ]},
     { title:'📸 WEEKLY CHECK-IN PROTOCOL', color:'#ec4899', items:[
-      'Weigh every morning — same time, post-toilet, pre-food. Average Mon-Fri for the week.',
-      'Weekly progress photo every Sunday — upload to Claude chat for body composition coaching.',
-      'Log all sets in the Training tab — progressive overload is tracked automatically.',
-      'Use the Analysis tab every Sunday to get calorie adjustment recommendations.',
-      'Current phase: Reverse diet (1,900 → 2,200 → 2,500 → 2,800 → 3,100 cal over 7 weeks).',
-      'Target lean bulk rate: 0.2kg/week. If gaining faster than 0.4kg/week, reduce 150 cal.',
+      'Weigh every morning — same time, post-toilet, pre-food. Average Mon-Fri.',
+      'Weekly photo every Sunday (front, side, back — same lighting, same underwear).',
+      'Log every set in the Training tab — no exceptions.',
+      'Submit weekly report via the Report tab every Sunday evening.',
+      'Block 1 → Block 2: move after week 2 regardless of the scale.',
+      'Target loss: 0.5-1.0 kg/week after week 1 (week 1 is usually 1.5-2 kg from water/glycogen drop).',
+      'If weight stalls 2 weeks in Block 2, Paul will drop calories 100-150 kcal.',
     ]},
   ];
 
@@ -1622,7 +1746,7 @@ function renderReport() {
   card1.className = 'card';
   card1.innerHTML = '<div class="label">BODY STATS</div>' +
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:#888;display:block;margin-bottom:4px">Weight (kg)</label>' +
-    '<input type="number" id="rpt-weight" class="input-sm" placeholder="e.g. 82.5" step="0.1" style="padding:10px 14px"></div>' +
+    '<input type="number" id="rpt-weight" class="input-sm" placeholder="e.g. 85.0" step="0.1" style="padding:10px 14px"></div>' +
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:#888;display:block;margin-bottom:4px">Waist (cm) - optional</label>' +
     '<input type="number" id="rpt-waist" class="input-sm" placeholder="e.g. 84" step="0.5" style="padding:10px 14px"></div>' +
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:#888;display:block;margin-bottom:4px">Chest (cm) - optional</label>' +
@@ -1766,13 +1890,28 @@ updateHeader();
 // ═══════════════════════════════════════════════════════════════════
 
 // ---------- 1. OFFLINE SERVICE WORKER ----------
-if ('serviceWorker' in navigator) {
+// Only register on production hosts. Skip claude artifact preview,
+// localhost, file:// etc. — those environments don't serve cameron-sw.js
+// and the 404 clutters the console.
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  var host = (location.hostname || '').toLowerCase();
+  var isPreview = host === '' ||
+                  host === 'localhost' ||
+                  host === '127.0.0.1' ||
+                  host.indexOf('claudeusercontent') !== -1 ||
+                  host.indexOf('claude.ai') !== -1 ||
+                  host.indexOf('anthropic') !== -1;
+  if (isPreview) {
+    console.log('[SW] skipped (preview host: ' + (host || 'file://') + ')');
+    return;
+  }
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('cameron-sw.js').catch(function(e){
       console.warn('SW register failed:', e);
     });
   });
-}
+})();
 
 // (Progress photos feature removed — was causing app bloat)
 
@@ -2227,16 +2366,47 @@ var WARMUPS = {
       {name: 'Light Bicep Curl', reps: '15 reps', note: 'Blood flow to biceps + forearms'},
       {name: 'Shoulder Pass-Through', reps: '10 reps', note: 'Open chest and shoulders'}
     ]
+  },
+  'UPPER': {
+    title: 'UPPER BODY WARM-UP',
+    time: '5–6 min',
+    steps: [
+      {name: 'Arm Circles', reps: '15 forward, 15 back', note: 'Shoulder joint warm-up'},
+      {name: 'Band Pull-Apart', reps: '15 reps', note: 'Rear delt + rotator cuff activation'},
+      {name: 'Wall Slide', reps: '10 reps', note: 'Scapular mobility — arms up the wall'},
+      {name: 'Cat-Cow Stretch', reps: '10 reps', note: 'Mobilise thoracic spine'},
+      {name: 'Push-Up (slow)', reps: '10 reps', note: 'Full ROM, warm up pecs + tris'},
+      {name: 'Scapular Pull-Up', reps: '8 reps', note: 'Wake up lats + scapular retractors'},
+      {name: 'Wrist Circles', reps: '10 each direction', note: 'Prep wrists for pressing + pulling'}
+    ]
+  },
+  'LOWER': {
+    title: 'LOWER BODY WARM-UP',
+    time: '5–7 min',
+    steps: [
+      {name: 'Hip Circles', reps: '10 each direction', note: 'Loosen hip joint'},
+      {name: 'Bodyweight Squat', reps: '15 reps', note: 'Slow, full depth — open hips'},
+      {name: 'Walking Knee Hugs', reps: '10 each leg', note: 'Hip flexor + glute activation'},
+      {name: 'Leg Swings (front/back)', reps: '10 each leg', note: 'Dynamic hamstring stretch'},
+      {name: 'Leg Swings (lateral)', reps: '10 each leg', note: 'Adductor + abductor warm-up'},
+      {name: 'Glute Bridge', reps: '15 reps, 2-sec hold', note: 'Fire up glutes'},
+      {name: 'Ankle Circles', reps: '10 each foot', note: 'Ankle mobility for squat/lunge depth'}
+    ]
   }
 };
 
 function getWarmupForDay(dayData) {
   var label = dayData.label || '';
+  // Cameron's split: UPPER A/B, LOWER A/B. UPPER B is shoulder/arm focused.
+  if (label.indexOf('UPPER B') !== -1) return WARMUPS['PUSH/PULL'];
+  if (label.indexOf('UPPER') !== -1) return WARMUPS['UPPER'];
+  if (label.indexOf('LOWER') !== -1) return WARMUPS['LOWER'];
+  // Paul's split (kept for compatibility if labels cross over):
   if (label.indexOf('PUSH/PULL') !== -1) return WARMUPS['PUSH/PULL'];
   if (label.indexOf('PUSH') !== -1) return WARMUPS['PUSH'];
   if (label.indexOf('PULL') !== -1) return WARMUPS['PULL'];
   if (label.indexOf('LEG') !== -1) return WARMUPS['LEGS'];
-  return WARMUPS['LEGS']; // fallback
+  return WARMUPS['LOWER']; // fallback
 }
 
 var warmupOpen = false;
@@ -2320,4 +2490,4 @@ function buildWarmupCard(dayData) {
 </script>
 
 </body>
-</ht
+</html>
