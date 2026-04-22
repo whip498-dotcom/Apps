@@ -201,7 +201,7 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
     </button>
     <button class="nav-item" onclick="showScreen('analysis')" id="nav-analysis">
       <span class="nav-icon">🤖</span>
-      <span class="nav-label">ANALYSIS</span>
+      <span class="nav-label">ACCOUNTABILITY</span>
     </button>
     <button class="nav-item" onclick="showScreen('report')" id="nav-report">
       <span class="nav-icon">📤</span>
@@ -1206,7 +1206,7 @@ function renderAnalysis() {
   var latest=checkins[checkins.length-1];
   var metaDiv=document.createElement('div');
   metaDiv.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px';
-  metaDiv.innerHTML='<div><div style="font-size:10px;color:#22c55e;letter-spacing:2px;margin-bottom:2px">// ANALYSIS</div><div style="font-size:10px;color:#444">Week '+latest.week+' · '+latest.date+'</div></div>';
+  metaDiv.innerHTML='<div><div style="font-size:10px;color:#22c55e;letter-spacing:2px;margin-bottom:2px">// ACCOUNTABILITY</div><div style="font-size:10px;color:#444">Week '+latest.week+' · '+latest.date+'</div></div>';
   c.appendChild(metaDiv);
   var sects=buildAnalysisData();
   if (sects) {
@@ -2481,7 +2481,7 @@ function buildWarmupCard(dayData) {
     cards.forEach(function(card){ if ((card.textContent||'').indexOf('PHOTO ANALYSIS') !== -1) card.remove(); });
     // Append new sections
     c.insertAdjacentHTML('beforeend', renderCorrelationSection());
-    c.insertAdjacentHTML('beforeend', buildAICoachCard());
+    // AI coach card intentionally omitted for Cameron — 14-day snapshot only.
   };
   // Re-render if user is currently on analysis screen
   var ana = document.getElementById('screen-analysis');

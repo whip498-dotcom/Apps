@@ -1,6 +1,6 @@
 // Catalyst Service Worker — makes the app work offline.
 // Bump this version string when you push a new cameron_app.html so clients pull fresh code.
-const CACHE = 'cameron-v1';
+const CACHE = 'cameron-v2';
 const FILES = ['./cameron_app.html'];
 
 self.addEventListener('install', (e) => {
