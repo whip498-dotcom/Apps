@@ -147,7 +147,7 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
         <div class="section-title">NOTES</div>
         <textarea id="ci-notes" rows="3" placeholder="How has the week been? Injuries, stress, diet..."></textarea>
       </div>
-      <button class="btn-primary" id="ci-save-btn" disabled onclick="saveCheckin()">Save &amp; Run Analysis →</button>
+      <button class="btn-primary" id="ci-save-btn" disabled onclick="saveCheckin()">Save Check-in →</button>
     </div>
 
     <!-- TRAINING SCREEN -->
@@ -1667,7 +1667,7 @@ function renderNutProtocol(c) {
 // ═══════════════════════════════════
 // WEEKLY REPORT / CHECK-IN TO COACH
 // ═══════════════════════════════════
-var COACH_EMAIL = 'Paul4rest@bigpond.com';
+var COACH_EMAIL = 'whip498@gmail.com';
 var REPORT_KEY = 'cameron_reports_v1';
 
 function getReportHistory() {
@@ -1850,8 +1850,13 @@ function sendReport() {
     nutrition: nutrition, energy: energy
   });
 
-  var mailto = 'mailto:' + COACH_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  window.location.href = mailto;
+  // Open Gmail compose directly (not the OS default mailto client).
+  // This URL works on desktop and mobile — iOS/Android Gmail apps also intercept it.
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+    + '&to=' + encodeURIComponent(COACH_EMAIL)
+    + '&su=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
 
   setTimeout(function() {
     document.getElementById('rpt-weight').value = '';
