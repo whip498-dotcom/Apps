@@ -253,7 +253,18 @@ class Dashboard:
     def _refresh(self) -> None:
         try:
             state = read_state()
+            # Always refresh the "updated Xs ago" label — it's cheap and the
+            # only thing that genuinely changes every tick.
             self._render_header(state)
+
+            # Skip the heavy rebuild when the *content* hasn't changed.
+            # Most scan cycles produce identical state for the same tickers;
+            # rebuilding the widget tree on every tick is what causes flicker.
+            content_hash = self._content_hash(state)
+            if content_hash == getattr(self, "_last_content_hash", None):
+                return
+
+            self._last_content_hash = content_hash
             candidates = state.get("candidates") or []
             top = next((c for c in candidates if c.get("is_top_pick")), candidates[0] if candidates else None)
             self._render_top_pick(top)
@@ -264,6 +275,23 @@ class Dashboard:
             self.updated_label.configure(text=f"refresh err: {e}", foreground=RED)
         finally:
             self.root.after(self.REFRESH_MS, self._refresh)
+
+    def _content_hash(self, state: dict) -> int:
+        """Hash of the parts of state that affect rendered widgets.
+
+        Excludes 'updated_at' so the timestamp tick alone doesn't trigger a
+        full widget rebuild (which is the visible flicker).
+        """
+        import json
+        snapshot = {
+            "window_status": state.get("window_status"),
+            "discord_min_conviction": state.get("discord_min_conviction"),
+            "trading_window": state.get("trading_window"),
+            "candidates": state.get("candidates"),
+            "movers": state.get("movers"),
+            "latest_backtest": state.get("latest_backtest"),
+        }
+        return hash(json.dumps(snapshot, sort_keys=True, default=str))
 
     def _render_header(self, state: dict) -> None:
         ws = state.get("window_status", "")
