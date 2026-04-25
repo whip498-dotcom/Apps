@@ -1,9 +1,11 @@
-"""CLI entrypoint.
+"""EdgeHawk CLI entrypoint.
 
 Usage examples:
 
-  python -m src.cli scan                  # one-shot premarket scan
+  python -m src.cli scan                  # one-shot squeeze scan
   python -m src.cli scan --loop 60        # rescan every 60s, alert new hits
+  python -m src.cli watch                 # live conviction ranking (in-place)
+  python -m src.cli watch --interval 15 --top 20
   python -m src.cli size 4.20 3.95        # sizing for entry=$4.20 stop=$3.95
   python -m src.cli enter NVNI gap_and_go 4.20 3.95 200
   python -m src.cli exit 17 5.10
@@ -22,6 +24,7 @@ from .alerts.discord import send_candidates, send_text
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.stats import compute_stats, overall_stats
+from .scanner.live import watch as live_watch
 from .scanner.scanner import Candidate, alert_worthy, scan, scan_summary
 from .sizing.sizing import size_trade
 
@@ -61,7 +64,18 @@ def _print_candidates(cs: list[Candidate]) -> None:
 
 @click.group()
 def cli() -> None:
-    """Small-cap premarket momentum toolkit."""
+    """EdgeHawk — small-cap squeeze scanner & trading toolkit."""
+
+
+@cli.command("watch")
+@click.option("--interval", default=30, help="Refresh interval in seconds")
+@click.option("--top", default=15, help="Number of ranked rows to render")
+def watch_cmd(interval: int, top: int) -> None:
+    """Live conviction ranking — in-place, refreshes on a timer."""
+    try:
+        live_watch(interval=interval, top=top, console=console)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]EdgeHawk watch stopped.[/yellow]")
 
 
 @cli.command("scan")
@@ -69,7 +83,7 @@ def cli() -> None:
 @click.option("--alert/--no-alert", default=True, help="Send Discord alerts")
 @click.option("--top", default=10, help="Max candidates to show / alert")
 def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
-    """Run the premarket scanner."""
+    """Run the squeeze scanner once (or in a logging loop)."""
     seen: set[str] = set()
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
@@ -203,7 +217,7 @@ def trades_cmd(limit):
 @cli.command("ping")
 def ping_cmd():
     """Test the Discord webhook."""
-    ok = send_text("✅ Premarket scanner ping — webhook works.")
+    ok = send_text("✅ EdgeHawk ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
 
 

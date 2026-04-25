@@ -81,7 +81,7 @@ def _embed_for(c: Candidate) -> dict:
         "title": f"${c.symbol}",
         "color": color,
         "fields": fields,
-        "footer": {"text": "Squeeze scanner — not financial advice"},
+        "footer": {"text": "EdgeHawk — not financial advice"},
     }
 
 
@@ -95,8 +95,8 @@ def send_candidates(candidates: Iterable[Candidate], top_n: int = 10) -> bool:
 
     avg_conf = sum(c.confidence for c in cs) / len(cs)
     payload = {
-        "username": "Squeeze Scanner",
-        "content": f"**Squeeze scan — {len(cs)} candidate(s) · avg conf {avg_conf:.1f}/10**",
+        "username": "EdgeHawk",
+        "content": f"**EdgeHawk — {len(cs)} squeeze candidate(s) · avg conf {avg_conf:.1f}/10**",
         "embeds": [_embed_for(c) for c in cs],
     }
 
