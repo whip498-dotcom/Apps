@@ -35,9 +35,14 @@ class Candidate:
     catalysts: list[NewsItem] = field(default_factory=list)
     filings: list[Filing] = field(default_factory=list)
     levels: Optional[Levels] = None
-    setup: str = ""           # 'gap_and_go' | 'news_runner' | 'parabolic_fade' | 'dilution_short' | etc
+    setup: str = ""
     score: float = 0.0
+    conviction: str = "low"   # 'high' | 'medium' | 'low'
+    conviction_reasons: list[str] = field(default_factory=list)
+    short_interest_pct: Optional[float] = None
+    days_to_cover: Optional[float] = None
     flags: list[str] = field(default_factory=list)
+    is_top_pick: bool = False
 
     @property
     def symbol(self) -> str:
@@ -54,6 +59,10 @@ class Candidate:
     @property
     def bearish_score(self) -> float:
         return sum(n.bearish_score for n in self.catalysts)
+
+    @property
+    def float_rotation(self) -> float:
+        return self.quote.float_rotation
 
 
 # ---------- shared filters ----------
@@ -139,12 +148,18 @@ def _score_long(c: Candidate) -> float:
         s -= 30
     if c.levels and c.levels.rr_target_1 >= 2.0:
         s += 8
+    # Float rotation bonus — premarket volume actually consuming the float
+    rot = c.float_rotation
+    if rot >= CONFIG.rotation_parabolic_threshold:
+        s += 25
+    elif rot >= CONFIG.rotation_warn_threshold:
+        s += 12
     return s
 
 
 def _score_short(c: Candidate) -> float:
     s = 0.0
-    s += min(c.quote.gap_pct, 200.0) * 0.6     # bigger gap = more rope to fade
+    s += min(c.quote.gap_pct, 200.0) * 0.6
     s += min(c.quote.relative_volume, 50.0) * 1.5
     if c.float_shares:
         s += max(0.0, (CONFIG.max_float - c.float_shares) / 1_000_000)
@@ -152,7 +167,56 @@ def _score_short(c: Candidate) -> float:
     s += 20 if c.has_dilution_risk else 0
     if c.levels and c.levels.rr_target_1 >= 2.0:
         s += 8
+    # Parabolic rotation favors fades (exhaustion)
+    rot = c.float_rotation
+    if rot >= CONFIG.rotation_parabolic_threshold:
+        s += 18
     return s
+
+
+def _classify_conviction(c: Candidate) -> tuple[str, list[str]]:
+    """HIGH = score above threshold + at least one strong confirming signal.
+
+    Returns (tier, reasons). Reasons explain *why* the call is high conviction
+    so the user can verify rather than blindly trust the bot.
+    """
+    reasons: list[str] = []
+
+    # Strong signals — count how many are present
+    strong = 0
+
+    if c.bullish_score >= 25 and c.side == "long":
+        reasons.append(f"Strong bullish news ({c.bullish_score:.0f})")
+        strong += 1
+    if c.bearish_score >= 25 and c.side == "short":
+        reasons.append(f"Strong bearish news ({c.bearish_score:.0f})")
+        strong += 1
+
+    if c.has_dilution_risk and c.side == "short":
+        reasons.append("Fresh dilution filing")
+        strong += 1
+
+    if c.float_rotation >= CONFIG.rotation_parabolic_threshold:
+        reasons.append(f"Float rotated {c.float_rotation:.1f}x (parabolic)")
+        strong += 1
+    elif c.float_rotation >= CONFIG.rotation_warn_threshold:
+        reasons.append(f"Float rotated {c.float_rotation:.1f}x")
+
+    if c.quote.relative_volume >= 10:
+        reasons.append(f"Extreme rvol {c.quote.relative_volume:.1f}x")
+        strong += 1
+
+    if c.levels and c.levels.rr_target_1 >= 2.5:
+        reasons.append(f"R:R {c.levels.rr_target_1:.1f} to TP1")
+
+    if c.float_shares and c.float_shares <= 10_000_000:
+        reasons.append(f"Tiny float {c.float_shares/1_000_000:.1f}M")
+
+    if c.score >= CONFIG.high_conviction_min_score and strong >= 2:
+        return "high", reasons
+    if c.score >= CONFIG.medium_conviction_min_score and (strong >= 1 or len(reasons) >= 2):
+        return "medium", reasons
+    return "low", reasons
 
 
 # ---------- main ----------
@@ -163,22 +227,34 @@ def scan() -> list[Candidate]:
         return []
 
     quotes = fetch_quotes(universe)
+    edgar_by_ticker = filings_by_ticker(fetch_recent_filings())
+    candidates: list[Candidate] = []
 
     survivors: list[Quote] = [
         q for q in quotes.values()
         if _passes_price_band(q) and _passes_volume(q) and _passes_rvol(q)
     ]
 
-    edgar_by_ticker = filings_by_ticker(fetch_recent_filings())
-    candidates: list[Candidate] = []
-
     for q in survivors:
         fs = get_float(q.symbol)
         if not _passes_float(fs):
             continue
+        q.float_shares = fs  # so float_rotation works
 
         _, news = has_catalyst(q.symbol, hours=24)
         filings = edgar_by_ticker.get(q.symbol, [])
+
+        # Optional short interest enrichment (lazy import — independent module)
+        si_pct = dtc = None
+        if CONFIG.enable_short_interest:
+            try:
+                from ..data.short_interest import get_short_interest
+                si = get_short_interest(q.symbol)
+                if si:
+                    si_pct = si.short_interest_pct
+                    dtc = si.days_to_cover
+            except Exception:
+                pass
 
         # LONG lane
         if CONFIG.enable_long_lane:
@@ -188,6 +264,7 @@ def scan() -> list[Candidate]:
                 c = Candidate(
                     side="long", quote=q, float_shares=fs,
                     catalysts=news, filings=filings, levels=lv, setup=setup,
+                    short_interest_pct=si_pct, days_to_cover=dtc,
                 )
                 if c.has_dilution_risk:
                     c.flags.append("DILUTION_RISK")
@@ -195,7 +272,12 @@ def scan() -> list[Candidate]:
                     c.flags.append("NO_CATALYST")
                 if lv is None:
                     c.flags.append("NO_LEVELS")
+                if q.float_rotation >= CONFIG.rotation_parabolic_threshold:
+                    c.flags.append("FLOAT_ROTATED_PARABOLIC")
+                elif q.float_rotation >= CONFIG.rotation_warn_threshold:
+                    c.flags.append("FLOAT_ROTATED_1X+")
                 c.score = _score_long(c)
+                c.conviction, c.conviction_reasons = _classify_conviction(c)
                 candidates.append(c)
 
         # SHORT lane
@@ -206,15 +288,24 @@ def scan() -> list[Candidate]:
                 c = Candidate(
                     side="short", quote=q, float_shares=fs,
                     catalysts=news, filings=filings, levels=lv, setup=setup,
+                    short_interest_pct=si_pct, days_to_cover=dtc,
                 )
                 if c.has_dilution_risk:
                     c.flags.append("DILUTION")
                 if lv is None:
                     c.flags.append("NO_LEVELS")
+                if q.float_rotation >= CONFIG.rotation_parabolic_threshold:
+                    c.flags.append("EXHAUSTION_RISK")
+                # Squeeze risk for shorts
+                if si_pct and si_pct >= 20:
+                    c.flags.append(f"HIGH_SI_{si_pct:.0f}%")
                 c.score = _score_short(c)
+                c.conviction, c.conviction_reasons = _classify_conviction(c)
                 candidates.append(c)
 
     candidates.sort(key=lambda c: c.score, reverse=True)
+    if candidates:
+        candidates[0].is_top_pick = True
     return candidates
 
 

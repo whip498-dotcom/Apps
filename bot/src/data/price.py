@@ -23,12 +23,20 @@ class Quote:
     avg_volume_30d: float
     gap_pct: float
     timestamp: datetime
+    float_shares: int | None = None
 
     @property
     def relative_volume(self) -> float:
         if self.avg_volume_30d <= 0:
             return 0.0
         return self.premarket_volume / self.avg_volume_30d
+
+    @property
+    def float_rotation(self) -> float:
+        """How many times the float has changed hands premarket. >1 is hot, >5 is parabolic."""
+        if not self.float_shares or self.float_shares <= 0:
+            return 0.0
+        return self.premarket_volume / self.float_shares
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8), reraise=True)

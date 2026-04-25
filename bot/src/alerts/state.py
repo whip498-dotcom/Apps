@@ -35,6 +35,9 @@ class AlertRecord:
     last_alert_time: datetime
     filings_count: int
     last_pm_volume: int
+    orb_high: Optional[float] = None
+    orb_low: Optional[float] = None
+    orb_break_alerted: bool = False
 
 
 class AlertTracker:
@@ -56,6 +59,26 @@ class AlertTracker:
         rec = self.records.get(self._key(c))
         if rec is None:
             return "new"
+
+        # Lazy import to avoid circular dependency at module load
+        from ..data.orb import compute_orb, detect_break
+
+        # ORB break — only alert once per (symbol, side)
+        if not rec.orb_break_alerted:
+            if rec.orb_high is None or rec.orb_low is None:
+                orb = compute_orb(c.symbol)
+                if orb is not None:
+                    rec.orb_high = orb.high
+                    rec.orb_low = orb.low
+            if rec.orb_high is not None:
+                from ..data.orb import ORB
+                fake = ORB(c.symbol, rec.orb_high, rec.orb_low or 0, 0, 0,
+                           captured_at=datetime.now(timezone.utc))
+                br = detect_break(c.symbol, fake)
+                if (br == "orb_break_up" and c.side == "long") or \
+                   (br == "orb_break_down" and c.side == "short"):
+                    rec.orb_break_alerted = True
+                    return br
 
         elapsed = (datetime.now(timezone.utc) - rec.last_alert_time).total_seconds()
         if elapsed < self.cooldown_seconds:

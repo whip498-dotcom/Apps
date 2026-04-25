@@ -16,18 +16,52 @@ A Python toolkit for IBKR AU traders running premarket-into-the-open small cap l
 
 | Module | Purpose |
 |---|---|
-| `scanner` | Builds universe → quotes → filters → splits LONG / SHORT lanes → ranks |
+| `scanner` | Builds universe → quotes → filters → splits LONG / SHORT lanes → ranks → tags conviction |
 | `data/edgar` | Real-time SEC 8-K / 424B5 / S-1 firehose |
 | `data/prwires` | GlobeNewswire / BusinessWire / PR Newswire / Accesswire RSS |
 | `data/news` | Weighted catalyst classifier (35+ rules, signed bullish/bearish scores) |
 | `data/finviz` | Top gainers + losers as universe expansion |
 | `data/float_data` | Cached float lookup (yfinance, 7d TTL) |
 | `data/levels` | Per-candidate entry / SL / TP zones, pivots, VWAP, S/R |
-| `alerts/discord` | Side-aware embeds: LONG green / SHORT red / updates blue |
-| `alerts/state` | Per-(symbol, side) re-alerter for movers, vol surges, new filings |
+| `data/orb` | Opening Range Breakout tracking and break detection |
+| `data/short_interest` | SI % + days-to-cover scrape (24h cache) |
+| `data/charts` | 5-min candle PNGs with VWAP/PMH/PDH/entry/stop overlays |
+| `alerts/discord` | One consolidated message per scan: LONG green / SHORT red / TOP PICK gold; HIGH conviction only by default |
+| `alerts/state` | Per-(symbol, side) re-alerter; price/vol/filing/ORB break |
 | `journal` | SQLite trade log |
 | `journal/stats` | Per-setup expectancy in R-multiples |
-| `sizing` | Risk-based + quarter-Kelly position sizer |
+| `journal/review` | EOD aggregator and Discord summary post |
+| `journal/ibkr_flex` | Auto-import IBKR fills via Flex Web Service |
+| `sizing` | Risk-based + quarter-Kelly + daily loss limit + cooldown after 2 losses |
+| `backtest` | Polygon-fed minute-bar replay of historical setups |
+
+## Conviction tiers (the "focus" filter)
+
+Each candidate is tagged HIGH / MEDIUM / LOW based on score + confirming signals (strong news, dilution, parabolic float rotation, extreme rvol, R:R quality, tiny float).
+
+- **🥇 TOP PICK** — single highest-score candidate per scan, gold embed
+- **HIGH** — strong setup, posted to Discord by default
+- **MEDIUM** — only posted if `DISCORD_MIN_CONVICTION=medium`
+- **LOW** — visible in CLI table only, never spams Discord
+
+The `Why HIGH` field on each Discord embed lists the specific reasons, so you can verify the call instead of blindly trusting it.
+
+## New commands
+
+```bash
+python -m src.cli scan                       # default: HIGH-only Discord
+python -m src.cli scan --min-conviction medium   # widen for the day
+python -m src.cli scan --no-charts           # disable chart attachments
+python -m src.cli daily-review               # post EOD summary to Discord
+python -m src.cli ibkr-import                # pull today's IBKR fills
+python -m src.cli backtest setups.csv        # replay historical setups
+```
+
+## Risk circuit breakers (built into `size`)
+
+- **Daily loss limit:** sizing locks once daily P&L hits `-DAILY_LOSS_LIMIT_PCT` (default 6%). Forces walk-away.
+- **Consecutive loss cooldown:** after 2 losers in a row, sizing locks for `CONSECUTIVE_LOSS_COOLDOWN_MINUTES` (default 30 min).
+- Override with `--bypass-circuit` if you really need to (think twice).
 
 ## Long vs Short lanes
 

@@ -51,6 +51,32 @@ class Config:
     max_risk_per_trade_pct: float = _f("MAX_RISK_PER_TRADE_PCT", 2.0)
     max_position_size_pct: float = _f("MAX_POSITION_SIZE_PCT", 25.0)
 
+    # Daily loss circuit breaker (% of equity). Sizing locks once breached.
+    daily_loss_limit_pct: float = _f("DAILY_LOSS_LIMIT_PCT", 6.0)
+    consecutive_loss_cooldown_minutes: int = _i("CONSECUTIVE_LOSS_COOLDOWN_MINUTES", 30)
+
+    # Conviction tiers — Discord only pings on HIGH by default.
+    high_conviction_min_score: float = _f("HIGH_CONVICTION_MIN_SCORE", 60.0)
+    medium_conviction_min_score: float = _f("MEDIUM_CONVICTION_MIN_SCORE", 35.0)
+    discord_min_conviction: str = os.getenv("DISCORD_MIN_CONVICTION", "high").lower()
+
+    # Float rotation (premarket vol / float). >1x is hot, >5x is parabolic.
+    rotation_warn_threshold: float = _f("ROTATION_WARN_THRESHOLD", 1.0)
+    rotation_parabolic_threshold: float = _f("ROTATION_PARABOLIC_THRESHOLD", 5.0)
+
+    # Opening Range Breakout window (minutes after the open)
+    orb_minutes: int = _i("ORB_MINUTES", 5)
+
+    # Short interest data
+    enable_short_interest: bool = os.getenv("ENABLE_SHORT_INTEREST", "true").lower() == "true"
+
+    # IBKR Flex Web Service auto-import
+    ibkr_flex_token: str = os.getenv("IBKR_FLEX_TOKEN", "")
+    ibkr_flex_query_id: str = os.getenv("IBKR_FLEX_QUERY_ID", "")
+
+    # Polygon for backtest historical bars
+    polygon_backtest_key: str = os.getenv("POLYGON_BACKTEST_KEY", "")
+
     # Re-alert thresholds for tickers already alerted this session.
     realert_price_pct: float = _f("REALERT_PRICE_PCT", 5.0)
     realert_volume_multiple: float = _f("REALERT_VOLUME_MULTIPLE", 2.0)

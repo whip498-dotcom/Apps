@@ -18,10 +18,11 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_candidates, send_text, send_updates
+from .alerts.discord import send_daily_review, send_scan, send_text
 from .alerts.state import AlertTracker
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
+from .journal.review import build_summary
 from .journal.stats import compute_stats, overall_stats
 from .scanner.scanner import Candidate, scan, scan_summary
 from .sizing.sizing import size_trade
@@ -34,13 +35,12 @@ def _print_candidates(cs: list[Candidate]) -> None:
         console.print("[yellow]No candidates passed filters.[/yellow]")
         return
     table = Table(title=f"Premarket candidates ({len(cs)})")
-    for col in ("Side", "Symbol", "Setup", "Price", "Gap%", "RVol", "Float",
-                "Entry", "Stop", "TP1", "RR1", "Score", "Catalyst"):
+    for col in ("⭐", "Conv", "Side", "Symbol", "Setup", "Price", "Gap%", "RVol", "Rot",
+                "Float", "Entry", "Stop", "TP1", "RR1", "Score"):
         table.add_column(col)
     for c in cs:
         side_color = "green" if c.side == "long" else "red"
-        side_label = f"[{side_color}]{c.side.upper()}[/{side_color}]"
-        cat = c.catalysts[0].headline[:50] if c.catalysts else ""
+        conv_color = {"high": "bright_green", "medium": "yellow", "low": "white"}[c.conviction]
         if c.levels:
             entry = f"${c.levels.entry_low:.2f}-{c.levels.entry_high:.2f}"
             stop = f"${c.levels.stop:.2f}"
@@ -49,16 +49,18 @@ def _print_candidates(cs: list[Candidate]) -> None:
         else:
             entry = stop = tp1 = rr1 = "-"
         table.add_row(
-            side_label,
+            "🥇" if c.is_top_pick else "",
+            f"[{conv_color}]{c.conviction.upper()}[/{conv_color}]",
+            f"[{side_color}]{c.side.upper()}[/{side_color}]",
             c.symbol,
             c.setup,
             f"${c.quote.last:.2f}",
             f"{c.quote.gap_pct:+.1f}",
             f"{c.quote.relative_volume:.1f}x",
+            f"{c.float_rotation:.2f}x",
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "?",
             entry, stop, tp1, rr1,
             f"{c.score:.1f}",
-            cat,
         )
     console.print(table)
 
@@ -72,35 +74,41 @@ def cli() -> None:
 @click.option("--loop", "loop_seconds", type=int, default=0, help="Re-scan every N seconds (0 = one shot)")
 @click.option("--alert/--no-alert", default=True, help="Send Discord alerts")
 @click.option("--top", default=10, help="Max candidates to show / alert")
-def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
-    """Run the premarket scanner."""
+@click.option("--charts/--no-charts", default=True, help="Attach chart screenshots to Discord alerts")
+@click.option("--min-conviction", type=click.Choice(["high", "medium", "low"]),
+              default=None, help="Override DISCORD_MIN_CONVICTION for this run")
+def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool, min_conviction: str | None) -> None:
+    """Run the premarket scanner. One consolidated Discord message per cycle.
+
+    Default: only HIGH-conviction candidates are sent to Discord.
+    The CLI table always shows everything for transparency.
+    """
+    if min_conviction:
+        # Mutate the global config copy for this process
+        object.__setattr__(CONFIG, "discord_min_conviction", min_conviction)
     tracker = AlertTracker()
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
-        console.rule(f"Scan @ {ts}")
+        console.rule(f"Scan @ {ts}  ·  Discord min={CONFIG.discord_min_conviction.upper()}")
         cs = scan()[:top]
         _print_candidates(cs)
 
-        if alert:
-            new_hits: list[Candidate] = []
-            updates: list[tuple[Candidate, str, float | None]] = []
+        if alert and cs:
+            items: list[tuple[Candidate, str, float | None]] = []
             for c in cs:
                 kind = tracker.classify(c)
                 if kind is None:
                     continue
-                if kind == "new":
-                    new_hits.append(c)
-                else:
-                    updates.append((c, kind, tracker.initial_price(c)))
+                ip = tracker.initial_price(c)
+                items.append((c, kind, ip))
                 tracker.record(c)
-
-            if new_hits:
-                send_candidates(new_hits, top_n=top)
-                console.print(f"[cyan]New alert: {len(new_hits)}[/cyan]")
-            if updates:
-                send_updates(updates)
-                kinds = ",".join(k for _, k, _ in updates)
-                console.print(f"[blue]Updates: {len(updates)} ({kinds})[/blue]")
+            if items:
+                ok = send_scan(items, attach_charts=charts)
+                eligible = [it for it in items if it[0].conviction == "high"]
+                console.print(
+                    f"[cyan]Discord: {ok} · {len(eligible)} HIGH conviction sent · "
+                    f"{len(items)} total candidates evaluated[/cyan]"
+                )
 
         if loop_seconds <= 0:
             return
@@ -112,13 +120,18 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
 @click.argument("stop", type=float)
 @click.option("--setup", default=None, help="Setup name — uses Kelly if 20+ trades exist")
 @click.option("--equity", type=float, default=None)
-def size_cmd(entry: float, stop: float, setup: str | None, equity: float | None) -> None:
+@click.option("--bypass-circuit", is_flag=True, help="Override daily loss limit / cooldown lock (use sparingly)")
+def size_cmd(entry: float, stop: float, setup: str | None, equity: float | None, bypass_circuit: bool) -> None:
     """Compute position size for a planned trade."""
-    rec = size_trade(entry, stop, setup=setup, equity=equity)
+    rec = size_trade(entry, stop, setup=setup, equity=equity, bypass_circuit_breaker=bypass_circuit)
     eq = equity if equity is not None else CONFIG.account_equity
     console.print(f"[bold]Equity:[/bold] ${eq:,.2f}")
     console.print(f"[bold]Entry:[/bold] ${entry:.2f}  [bold]Stop:[/bold] ${stop:.2f}  "
                   f"[bold]Risk/sh:[/bold] ${abs(entry - stop):.2f}")
+    if rec.locked:
+        console.print(f"[red bold]🛑 LOCKED — {rec.lock_reason}[/red bold]")
+        console.print("[yellow]Pass --bypass-circuit to override (think twice).[/yellow]")
+        return
     console.print(f"[bold]Method:[/bold] {rec.method}")
     console.print(f"[bold]Reason:[/bold] {rec.reason}")
     console.print(f"[green bold]Shares: {rec.shares}[/green bold]   "
@@ -219,6 +232,72 @@ def ping_cmd():
     """Test the Discord webhook."""
     ok = send_text("✅ Premarket scanner ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
+
+
+@cli.command("daily-review")
+@click.option("--post/--no-post", default=True, help="Post the review to Discord")
+def daily_review_cmd(post: bool):
+    """Aggregate today's alerts + trades and post a Discord summary."""
+    summary = build_summary()
+    console.print_json(data=summary)
+    if post:
+        ok = send_daily_review(summary)
+        console.print(f"Discord: {'OK' if ok else 'FAILED'}")
+
+
+@cli.command("ibkr-import")
+def ibkr_import_cmd():
+    """Pull today's IBKR fills via Flex Web Service into the journal."""
+    from .journal.ibkr_flex import import_today
+    try:
+        result = import_today()
+    except Exception as e:
+        console.print(f"[red]Failed: {e}[/red]")
+        return
+    console.print(f"[green]Imported: {result}[/green]")
+
+
+@cli.command("backtest")
+@click.argument("setups_csv", type=click.Path(exists=True))
+@click.option("--max-hold", default=120, help="Max minutes to hold per trade")
+def backtest_cmd(setups_csv: str, max_hold: int):
+    """Replay setups from a CSV through Polygon historical 1m bars.
+
+    CSV columns: symbol,trade_date(YYYY-MM-DD),side(long|short),entry,stop,target_1,target_2,setup_tag,catalyst
+    """
+    from datetime import date as _date
+
+    import pandas as pd
+
+    from .backtest.engine import Setup, run_backtest, summarize
+    df = pd.read_csv(setups_csv)
+    setups = [
+        Setup(
+            symbol=row["symbol"],
+            trade_date=_date.fromisoformat(str(row["trade_date"])),
+            side=row["side"],
+            entry=float(row["entry"]),
+            stop=float(row["stop"]),
+            target_1=float(row["target_1"]),
+            target_2=float(row["target_2"]),
+            setup_tag=str(row.get("setup_tag", "")),
+            catalyst=str(row.get("catalyst", "")),
+        )
+        for _, row in df.iterrows()
+    ]
+    console.print(f"[cyan]Running {len(setups)} setups (rate-limited at 5/min)...[/cyan]")
+    results = run_backtest(setups)
+    stats = summarize(results)
+    console.print(f"[bold]Aggregate:[/bold] n={stats.n_setups} triggered={stats.n_triggered} "
+                  f"winRate={stats.win_rate:.1%} ExpR={stats.expectancy_R:+.2f} "
+                  f"PF={stats.profit_factor:.2f}")
+    if stats.by_setup_tag:
+        table = Table(title="By setup tag")
+        for col in ("Tag", "N", "Win%", "ExpR"):
+            table.add_column(col)
+        for tag, b in sorted(stats.by_setup_tag.items(), key=lambda kv: -kv[1]["expectancy_R"]):
+            table.add_row(tag, str(b["n"]), f"{b['win_rate']:.1%}", f"{b['expectancy_R']:+.2f}")
+        console.print(table)
 
 
 if __name__ == "__main__":
