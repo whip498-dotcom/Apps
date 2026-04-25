@@ -75,7 +75,7 @@ class Dashboard:
 
     def __init__(self, root: tk.Tk, always_on_top: bool = True):
         self.root = root
-        self.root.title("Premarket Live Status")
+        self.root.title("EdgeHawk")
         self.root.geometry("1400x900")
         self.root.minsize(900, 650)
         self.root.configure(bg=BG)
@@ -155,7 +155,7 @@ class Dashboard:
         header.pack(fill="x")
         header.pack_propagate(False)
 
-        ttk.Label(header, text="📊 Premarket Live Status",
+        ttk.Label(header, text="🦅 EdgeHawk",
                   style="Header.TLabel").pack(side="left", padx=14)
 
         self.window_pill = ttk.Label(header, text="--", style="Mono.TLabel")

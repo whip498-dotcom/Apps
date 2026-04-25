@@ -1,5 +1,5 @@
 @echo off
-REM Daily premarket scanner launcher. Double-click to start.
+REM EdgeHawk — daily premarket scanner launcher. Double-click to start.
 REM Pulls latest code, activates venv, runs scan loop with Discord alerts.
 
 cd /d "%~dp0\.."
@@ -17,9 +17,9 @@ if not exist ".venv\Scripts\activate.bat" (
 
 call ".venv\Scripts\activate.bat"
 
-title Premarket Scanner - Ctrl+C to stop
+title EdgeHawk Scanner - Ctrl+C to stop
 echo.
-echo Starting premarket scanner. Alerts will be sent to your Discord.
+echo Starting EdgeHawk. Alerts will be sent to your Discord.
 echo Close this window or press Ctrl+C to stop.
 echo.
 

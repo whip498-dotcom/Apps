@@ -11,5 +11,5 @@ if not exist ".venv\Scripts\activate.bat" (
 )
 
 call ".venv\Scripts\activate.bat"
-title Premarket Dashboard
+title EdgeHawk Dashboard
 python -m src.cli dashboard-app --always-on-top

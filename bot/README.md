@@ -1,4 +1,6 @@
-# Small-Cap Premarket Momentum Toolkit
+# 🦅 EdgeHawk
+
+**Small-cap premarket momentum toolkit**
 
 A Python toolkit for IBKR AU traders running premarket-into-the-open small cap longs. **It does not place orders.** It scans, ranks, alerts, sizes, and journals — you click the button in IBKR.
 

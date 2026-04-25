@@ -191,7 +191,7 @@ def _embed_for(c: Candidate, kind: str = "new", initial_price: Optional[float] =
         "title": _title(c, kind),
         "color": _color(c, kind),
         "fields": fields,
-        "footer": {"text": "Premarket scanner — not financial advice"},
+        "footer": {"text": "EdgeHawk — not financial advice"},
     }
     if chart_filename:
         embed["image"] = {"url": f"attachment://{chart_filename}"}
@@ -302,7 +302,7 @@ def send_scan(items: list[tuple[Candidate, str, Optional[float]]],
             })
 
         payload = {
-            "username": "Premarket Scanner",
+            "username": "🦅 EdgeHawk",
             "content": _summary_header(batch),
             "embeds": embeds,
         }
@@ -450,7 +450,7 @@ def send_morning_brief(movers: list[OvernightMover]) -> bool:
         return False
     top2 = movers[:2]
     payload = {
-        "username": "Morning Brief",
+        "username": "🦅 EdgeHawk · Morning Brief",
         "content": (
             "🌅 **Morning Brief — top overnight/aftermarket movers in your universe**\n"
             "_Informational context. May not qualify for trade lanes — verify before sizing._"
@@ -516,7 +516,7 @@ def update_live_tile(
         embeds.append(_live_ranked_table_embed(candidates))
     else:
         embeds.append({
-            "title": "Premarket scanner — no qualifying candidates yet",
+            "title": "EdgeHawk — no qualifying candidates yet",
             "color": GRAY,
             "description": "Scanner is running. Tile updates each cycle.",
         })
@@ -529,7 +529,7 @@ def update_live_tile(
         content += f"  ·  {window_status}"
 
     payload = {
-        "username": "Premarket Live",
+        "username": "🦅 EdgeHawk · Live",
         "content": content,
         "embeds": embeds,
     }

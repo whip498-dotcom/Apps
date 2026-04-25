@@ -300,7 +300,7 @@ def trades_cmd(limit):
 @cli.command("ping")
 def ping_cmd():
     """Test the Discord webhook."""
-    ok = send_text("✅ Premarket scanner ping — webhook works.")
+    ok = send_text("✅ EdgeHawk ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
 
 
