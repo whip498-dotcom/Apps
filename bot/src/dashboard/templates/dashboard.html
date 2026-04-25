@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Premarket Live Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel2: #1c222b;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --gold: #f1c40f;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --orange: #e67e22;
+    --purple: #9b59b6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.45; }
+  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    position: sticky; top: 0; z-index: 5; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px; display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill.green { background: rgba(46, 204, 113, 0.15); color: var(--green); }
+  .pill.gray { background: rgba(139, 148, 158, 0.18); color: var(--muted); }
+  .pill.gold { background: rgba(241, 196, 15, 0.15); color: var(--gold); }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  .card h2 { margin: 0; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .card .body { padding: 16px; }
+
+  /* TOP PICK card */
+  .top-pick { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(241,196,15,0.2); }
+  .top-pick h2 { color: var(--gold); }
+  .pick-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .pick-symbol { font-size: 28px; font-weight: 700; }
+  .pick-side { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; }
+  .pick-side.long { background: rgba(46, 204, 113, 0.15); color: var(--green); }
+  .pick-side.short { background: rgba(231, 76, 60, 0.15); color: var(--red); }
+  .pick-setup { color: var(--muted); }
+  .pick-score { margin-left: auto; font-size: 22px; font-weight: 600; color: var(--gold); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 14px; }
+  .stat { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; }
+  .stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; }
+  .stat .value { font-size: 16px; font-weight: 600; margin-top: 2px; }
+
+  .plan { margin-top: 16px; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; }
+  .plan h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; }
+  .plan-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+  .plan-cell .label { color: var(--muted); font-size: 11px; }
+  .plan-cell .value { font-size: 15px; font-weight: 600; font-family: "SF Mono", Menlo, monospace; }
+  .plan-cell.long .value { color: var(--green); }
+  .plan-cell.stop .value { color: var(--red); }
+  .plan-cell.target .value { color: var(--blue); }
+
+  .reasons { margin-top: 14px; }
+  .reasons ul { margin: 0; padding-left: 20px; }
+  .reasons li { color: var(--text); margin-bottom: 4px; }
+
+  .catalyst { margin-top: 14px; padding: 10px 12px; background: var(--panel2);
+    border-left: 3px solid var(--blue); border-radius: 6px; }
+  .catalyst.dilutive { border-left-color: var(--orange); }
+  .catalyst .tag { display: inline-block; padding: 1px 6px; background: rgba(52, 152, 219, 0.18);
+    color: var(--blue); border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+
+  .levels { margin-top: 14px; padding: 10px 12px; background: var(--panel2);
+    border-radius: 6px; font-family: "SF Mono", Menlo, monospace; font-size: 13px; }
+
+  /* Ranked candidates table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+  td { padding: 10px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr.top-row { background: rgba(241, 196, 15, 0.06); }
+  tr.long { box-shadow: inset 3px 0 0 var(--green); }
+  tr.short { box-shadow: inset 3px 0 0 var(--red); }
+  td.mono { font-family: "SF Mono", Menlo, monospace; }
+  td.right { text-align: right; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge.high { background: rgba(46, 204, 113, 0.18); color: var(--green); }
+  .badge.medium { background: rgba(241, 196, 15, 0.18); color: var(--gold); }
+  .badge.low { background: rgba(139, 148, 158, 0.18); color: var(--muted); }
+  .gain { color: var(--green); }
+  .loss { color: var(--red); }
+
+  /* Movers card */
+  .mover { display: grid; grid-template-columns: 1fr; gap: 6px;
+    padding: 12px 14px; background: var(--panel2);
+    border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+  .mover .head { display: flex; align-items: center; gap: 10px; }
+  .mover .symbol { font-size: 18px; font-weight: 700; }
+  .mover .move { font-size: 16px; font-weight: 600; }
+  .mover .meta { color: var(--muted); font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px; }
+  .mover .cat { color: var(--muted); font-size: 13px; }
+  .mover.dilutive { border-left: 3px solid var(--orange); }
+
+  .empty { color: var(--muted); padding: 20px; text-align: center; }
+
+  footer { color: var(--muted); padding: 16px; text-align: center; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Premarket Live Status</h1>
+  <span id="window-pill" class="pill gray">--</span>
+  <span id="conv-pill" class="pill gray">--</span>
+  <span id="window-meta" class="meta"></span>
+  <span id="updated" class="meta" style="margin-left:auto"></span>
+</header>
+
+<main class="container">
+  <section class="card top-pick" id="top-pick-card">
+    <h2>🥇 Top Pick</h2>
+    <div class="body" id="top-pick-body">
+      <div class="empty">No qualifying candidates yet.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>📋 Ranked Candidates</h2>
+    <div class="body" style="padding: 0">
+      <table id="candidates-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Sym</th><th>Side</th><th>Conv</th><th>Setup</th>
+            <th class="right">Price</th><th class="right">Gap</th><th class="right">RVol</th>
+            <th class="right">Rot</th><th class="right">Float</th>
+            <th>Entry</th><th>Stop</th><th>TP1</th><th class="right">RR</th><th class="right">Score</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="candidates-empty" class="empty" style="display:none">No candidates passing filters.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🌙 Overnight Movers (universe-wide)</h2>
+    <div class="body" id="movers-body">
+      <div class="empty">No overnight movers detected yet.</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Notifications go to your Discord channel — this dashboard is a silent always-on view.
+  Auto-refresh: 3s. Source: <code class="mono">data_cache/dashboard_state.json</code>.
+</footer>
+
+<script>
+const fmtMoney = v => v == null ? "—" : "$" + Number(v).toFixed(2);
+const fmtPct = v => v == null ? "—" : (v > 0 ? "+" : "") + Number(v).toFixed(1) + "%";
+const fmtVol = v => v == null ? "—" : Number(v).toLocaleString();
+const fmtFloat = v => v == null ? "?" : (v / 1_000_000).toFixed(1) + "M";
+
+function relTime(iso) {
+  if (!iso) return "—";
+  const ago = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (ago < 60) return Math.round(ago) + "s ago";
+  if (ago < 3600) return Math.round(ago / 60) + "m ago";
+  return Math.round(ago / 3600) + "h ago";
+}
+
+function renderTopPick(c) {
+  if (!c) return '<div class="empty">No qualifying candidates yet.</div>';
+  const sideCls = c.side === "long" ? "long" : "short";
+  const lv = c.levels;
+  let html = `
+    <div class="pick-head">
+      <span class="pick-symbol">$${c.symbol}</span>
+      <span class="pick-side ${sideCls}">${c.side.toUpperCase()}</span>
+      <span class="pick-setup">${c.setup || ""}</span>
+      <span class="pick-score">${c.score.toFixed(1)}</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="label">Price</div><div class="value">${fmtMoney(c.price)}</div></div>
+      <div class="stat"><div class="label">Gap</div><div class="value ${c.gap_pct >= 0 ? 'gain' : 'loss'}">${fmtPct(c.gap_pct)}</div></div>
+      <div class="stat"><div class="label">RVol</div><div class="value">${c.rvol.toFixed(1)}x</div></div>
+      <div class="stat"><div class="label">PM Vol</div><div class="value">${fmtVol(c.premarket_volume)}</div></div>
+      <div class="stat"><div class="label">Float</div><div class="value">${fmtFloat(c.float_shares)}</div></div>
+      <div class="stat"><div class="label">Rotation</div><div class="value">${c.rotation.toFixed(2)}x</div></div>
+    </div>`;
+
+  if (lv) {
+    html += `
+      <div class="plan">
+        <h3>Trade plan</h3>
+        <div class="plan-grid">
+          <div class="plan-cell long"><div class="label">Entry</div><div class="value">${fmtMoney(lv.entry_low)} – ${fmtMoney(lv.entry_high)}</div></div>
+          <div class="plan-cell stop"><div class="label">Stop</div><div class="value">${fmtMoney(lv.stop)}</div></div>
+          <div class="plan-cell target"><div class="label">TP1 (R:R ${lv.rr_target_1.toFixed(2)})</div><div class="value">${fmtMoney(lv.target_1)}</div></div>
+          <div class="plan-cell target"><div class="label">TP2 (R:R ${lv.rr_target_2.toFixed(2)})</div><div class="value">${fmtMoney(lv.target_2)}</div></div>
+        </div>
+      </div>`;
+  }
+
+  if (c.conviction_reasons && c.conviction_reasons.length) {
+    html += '<div class="reasons"><strong>Why ' + c.conviction.toUpperCase() + '</strong><ul>';
+    c.conviction_reasons.slice(0, 6).forEach(r => { html += `<li>${r}</li>`; });
+    html += '</ul></div>';
+  }
+
+  if (c.catalyst) {
+    const tags = (c.catalyst.tags || []).map(t => `<span class="tag">${t}</span>`).join(" ");
+    html += `<div class="catalyst${c.has_dilution_risk ? ' dilutive' : ''}">
+      ${tags}<a href="${c.catalyst.url}" target="_blank">${c.catalyst.headline}</a>
+    </div>`;
+  }
+
+  if (c.filing) {
+    const dilute = c.filing.is_dilutive ? "⚠️ " : "";
+    html += `<div class="catalyst${c.filing.is_dilutive ? ' dilutive' : ''}">
+      <strong>${dilute}Filing — ${c.filing.form}:</strong>
+      <a href="${c.filing.link}" target="_blank">${c.filing.title}</a>
+    </div>`;
+  }
+
+  if (lv) {
+    html += `<div class="levels">
+      PMH ${fmtMoney(lv.premarket_high)} · PML ${fmtMoney(lv.premarket_low)} · VWAP ${fmtMoney(lv.vwap)}<br>
+      PDH ${fmtMoney(lv.prior_day_high)} · PDC ${fmtMoney(lv.prior_day_close)} · PDL ${fmtMoney(lv.prior_day_low)}<br>
+      R2 ${fmtMoney(lv.r2)} · R1 ${fmtMoney(lv.r1)} · Pivot ${fmtMoney(lv.pivot)} · S1 ${fmtMoney(lv.s1)} · S2 ${fmtMoney(lv.s2)}
+    </div>`;
+  }
+  return html;
+}
+
+function renderCandidates(rows) {
+  const tbody = document.querySelector("#candidates-table tbody");
+  const empty = document.getElementById("candidates-empty");
+  tbody.innerHTML = "";
+  if (!rows.length) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  rows.slice(0, 12).forEach((c, i) => {
+    const lv = c.levels;
+    const tr = document.createElement("tr");
+    tr.className = (c.is_top_pick ? "top-row " : "") + c.side;
+    const conv = `<span class="badge ${c.conviction}">${c.conviction.toUpperCase()}</span>`;
+    const sideHtml = c.side === "long" ? "🟢 L" : "🔴 S";
+    const symHtml = (c.is_top_pick ? "🥇 " : "") + "$" + c.symbol;
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td><strong>${symHtml}</strong></td>
+      <td>${sideHtml}</td>
+      <td>${conv}</td>
+      <td>${c.setup || ""}</td>
+      <td class="right mono">${fmtMoney(c.price)}</td>
+      <td class="right mono ${c.gap_pct >= 0 ? 'gain' : 'loss'}">${fmtPct(c.gap_pct)}</td>
+      <td class="right mono">${c.rvol.toFixed(1)}x</td>
+      <td class="right mono">${c.rotation.toFixed(2)}x</td>
+      <td class="right mono">${fmtFloat(c.float_shares)}</td>
+      <td class="mono">${lv ? fmtMoney(lv.entry_low) + "–" + fmtMoney(lv.entry_high).replace("$", "") : "—"}</td>
+      <td class="mono">${lv ? fmtMoney(lv.stop) : "—"}</td>
+      <td class="mono">${lv ? fmtMoney(lv.target_1) : "—"}</td>
+      <td class="right mono">${lv ? lv.rr_target_1.toFixed(2) : "—"}</td>
+      <td class="right mono"><strong>${c.score.toFixed(1)}</strong></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderMovers(movers) {
+  const root = document.getElementById("movers-body");
+  if (!movers.length) {
+    root.innerHTML = '<div class="empty">No overnight movers detected yet.</div>';
+    return;
+  }
+  let html = "";
+  movers.slice(0, 2).forEach((m, i) => {
+    const arrow = m.gap_pct >= 0 ? "↗" : "↘";
+    const moveCls = m.gap_pct >= 0 ? "gain" : "loss";
+    const lv = m.levels;
+    let levels = "";
+    if (lv) {
+      levels = `PDH ${fmtMoney(lv.prior_day_high)} · PDC ${fmtMoney(lv.prior_day_close)} · `
+        + `PDL ${fmtMoney(lv.prior_day_low)} · VWAP ${fmtMoney(lv.vwap)} · `
+        + `R1 ${fmtMoney(lv.r1)} · S1 ${fmtMoney(lv.s1)}`;
+    }
+    let cat = "no fresh catalyst";
+    if (m.catalyst) {
+      const tags = (m.catalyst.tags || []).join(" · ");
+      cat = `<a href="${m.catalyst.url}" target="_blank">${m.catalyst.headline}</a>${tags ? " <span class=\"meta\">" + tags + "</span>" : ""}`;
+    }
+    html += `<div class="mover${m.has_dilution_risk ? ' dilutive' : ''}">
+      <div class="head">
+        <span class="symbol">#${i + 1} $${m.symbol}</span>
+        <span class="move ${moveCls}">${arrow} ${fmtPct(m.gap_pct)}</span>
+        <span class="meta">${fmtMoney(m.price)} · prev close ${fmtMoney(m.prev_close)}</span>
+        ${m.has_dilution_risk ? '<span class="pill" style="background:rgba(230,126,34,0.18);color:var(--orange)">⚠️ DILUTION</span>' : ""}
+      </div>
+      <div class="meta">${levels}</div>
+      <div class="cat">📰 ${cat}</div>`;
+    if (m.filing) {
+      html += `<div class="cat">📄 <strong>${m.filing.form}:</strong> <a href="${m.filing.link}" target="_blank">${m.filing.title}</a></div>`;
+    }
+    html += "</div>";
+  });
+  root.innerHTML = html;
+}
+
+async function refresh() {
+  try {
+    const res = await fetch("/api/state", { cache: "no-store" });
+    const s = await res.json();
+    document.getElementById("updated").textContent = "Updated " + relTime(s.updated_at);
+    const wp = document.getElementById("window-pill");
+    if (s.window_status && s.window_status.includes("IN")) {
+      wp.className = "pill green"; wp.textContent = "🟢 IN-WINDOW";
+    } else {
+      wp.className = "pill gray"; wp.textContent = "🔘 OFF-WINDOW";
+    }
+    document.getElementById("window-meta").textContent = s.trading_window || "";
+    const cp = document.getElementById("conv-pill");
+    cp.className = "pill gold";
+    cp.textContent = "Min " + (s.discord_min_conviction || "high").toUpperCase();
+
+    const candidates = s.candidates || [];
+    const top = candidates.find(c => c.is_top_pick) || candidates[0];
+    document.getElementById("top-pick-body").innerHTML = renderTopPick(top);
+    renderCandidates(candidates);
+    renderMovers(s.movers || []);
+  } catch (e) {
+    console.error("refresh failed", e);
+  }
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

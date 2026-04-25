@@ -18,11 +18,21 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_candidates, send_text
+from .alerts.discord import (
+    send_daily_review,
+    send_morning_brief,
+    send_scan,
+    send_text,
+    update_live_tile,
+)
+from .alerts.state import AlertTracker, in_trading_window
+from .dashboard.state import write_state as write_dashboard_state
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
+from .journal.review import build_summary
 from .journal.stats import compute_stats, overall_stats
 from .scanner.scanner import Candidate, scan, scan_summary
+from .scheduler import Scheduler
 from .sizing.sizing import size_trade
 
 console = Console()
@@ -33,20 +43,32 @@ def _print_candidates(cs: list[Candidate]) -> None:
         console.print("[yellow]No candidates passed filters.[/yellow]")
         return
     table = Table(title=f"Premarket candidates ({len(cs)})")
-    for col in ("Symbol", "Price", "Gap%", "RVol", "PM Vol", "Float", "Score", "Catalyst", "Flags"):
+    for col in ("⭐", "Conv", "Side", "Symbol", "Setup", "Price", "Gap%", "RVol", "Rot",
+                "Float", "Entry", "Stop", "TP1", "RR1", "Score"):
         table.add_column(col)
     for c in cs:
-        cat = c.catalysts[0].headline[:60] if c.catalysts else ""
+        side_color = "green" if c.side == "long" else "red"
+        conv_color = {"high": "bright_green", "medium": "yellow", "low": "white"}[c.conviction]
+        if c.levels:
+            entry = f"${c.levels.entry_low:.2f}-{c.levels.entry_high:.2f}"
+            stop = f"${c.levels.stop:.2f}"
+            tp1 = f"${c.levels.target_1:.2f}"
+            rr1 = f"{c.levels.rr_target_1:.2f}"
+        else:
+            entry = stop = tp1 = rr1 = "-"
         table.add_row(
+            "🥇" if c.is_top_pick else "",
+            f"[{conv_color}]{c.conviction.upper()}[/{conv_color}]",
+            f"[{side_color}]{c.side.upper()}[/{side_color}]",
             c.symbol,
+            c.setup,
             f"${c.quote.last:.2f}",
             f"{c.quote.gap_pct:+.1f}",
             f"{c.quote.relative_volume:.1f}x",
-            f"{c.quote.premarket_volume:,}",
+            f"{c.float_rotation:.2f}x",
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "?",
+            entry, stop, tp1, rr1,
             f"{c.score:.1f}",
-            cat,
-            ",".join(c.flags),
         )
     console.print(table)
 
@@ -60,21 +82,103 @@ def cli() -> None:
 @click.option("--loop", "loop_seconds", type=int, default=0, help="Re-scan every N seconds (0 = one shot)")
 @click.option("--alert/--no-alert", default=True, help="Send Discord alerts")
 @click.option("--top", default=10, help="Max candidates to show / alert")
-def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
-    """Run the premarket scanner."""
-    seen: set[str] = set()
+@click.option("--charts/--no-charts", default=True, help="Attach chart screenshots to Discord alerts")
+@click.option("--min-conviction", type=click.Choice(["high", "medium", "low"]),
+              default=None, help="Override DISCORD_MIN_CONVICTION for this run")
+@click.option("--ignore-window/--respect-window", default=False,
+              help="Send Discord alerts even outside the trading window")
+@click.option("--auto/--no-auto", default=True,
+              help="Run scheduled tasks (IBKR import, daily review, backtest) inside the loop")
+def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
+             min_conviction: str | None, ignore_window: bool, auto: bool) -> None:
+    """Run the premarket scanner. One consolidated Discord message per cycle.
+
+    Default: only HIGH-conviction candidates are sent to Discord.
+    Discord alerts are gated to TRADING_WINDOW_START–TRADING_WINDOW_END (NY).
+    Outside that window the scanner still ticks (to keep state warm) but stays silent.
+    """
+    if min_conviction:
+        object.__setattr__(CONFIG, "discord_min_conviction", min_conviction)
+
+    tracker = AlertTracker()
+    scheduler = Scheduler(log=lambda s: console.print(f"[magenta]{s}[/magenta]")) if auto else None
+    morning_brief_sent = False
+
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
-        console.rule(f"Scan @ {ts}")
-        cs = scan()[:top]
-        _print_candidates(cs)
+        within_window = in_trading_window()
+        window_tag = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
+        console.rule(
+            f"Scan @ {ts}  ·  {window_tag}  ·  "
+            f"Discord min={CONFIG.discord_min_conviction.upper()}  ·  "
+            f"window {CONFIG.trading_window_start}–{CONFIG.trading_window_end} NY"
+        )
 
-        if alert:
-            new = [c for c in cs if c.symbol not in seen]
-            if new:
-                ok = send_candidates(new, top_n=top)
-                console.print(f"[cyan]Alert sent: {ok} ({len(new)} new)[/cyan]")
-                seen.update(c.symbol for c in new)
+        result = scan()
+        cs = result.candidates[:top]
+        movers = result.movers
+
+        # Update session top pick — leader stays put unless beaten by 5%+
+        new_leader, prev = tracker.update_session_top(cs)
+        _print_candidates(cs)
+        if movers:
+            console.print(
+                f"[blue]Overnight movers in universe (top {min(2, len(movers))}):[/blue] "
+                + " · ".join(f"${m.symbol} {m.gap_pct:+.1f}%" for m in movers[:2])
+            )
+
+        # Always refresh the live status tile (silent edit, no notification ping)
+        window_status = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
+        update_live_tile(cs, movers=movers, window_status=window_status)
+
+        # Always write the dashboard state file so the desktop app reflects it
+        try:
+            write_dashboard_state(cs, movers, window_status)
+        except Exception as e:
+            console.print(f"[red]Dashboard state write failed: {e}[/red]")
+
+        # One-time morning brief on the first scan that has movers (and Discord is gated open)
+        if alert and not morning_brief_sent and movers and (within_window or ignore_window):
+            if send_morning_brief(movers):
+                morning_brief_sent = True
+                console.print("[bold cyan]🌅 Morning brief sent.[/bold cyan]")
+
+        if alert and cs and (within_window or ignore_window):
+            items: list[tuple[Candidate, str, float | None]] = []
+            for c in cs:
+                kind = tracker.classify(c)
+                # Force a 'top_pick_new' alert when leadership changes
+                if c is new_leader and kind in (None, "new"):
+                    kind = "top_pick_new"
+                if kind is None:
+                    continue
+                ip = tracker.initial_price(c)
+                items.append((c, kind, ip))
+                tracker.record(c)
+
+            if new_leader and prev:
+                console.print(
+                    f"[bold yellow]🥇 NEW TOP PICK: ${new_leader.symbol} "
+                    f"(was ${prev[0]} score {prev[2]:.1f} → ${new_leader.score:.1f})[/bold yellow]"
+                )
+
+            if items:
+                ok = send_scan(items, attach_charts=charts)
+                eligible = [it for it in items if it[0].conviction == "high"]
+                console.print(
+                    f"[cyan]Discord: {ok} · {len(eligible)} HIGH conviction sent · "
+                    f"{len(items)} total events evaluated[/cyan]"
+                )
+        elif alert and cs and not within_window:
+            console.print("[yellow]Outside trading window — Discord silenced (state still tracked).[/yellow]")
+
+        # Auto-run scheduled tasks (IBKR import / daily review / backtest)
+        if scheduler is not None:
+            report = scheduler.tick()
+            if report.ran:
+                console.print(f"[magenta]Scheduler ran: {report.ran}[/magenta]")
+            if report.errors:
+                console.print(f"[red]Scheduler errors: {report.errors}[/red]")
 
         if loop_seconds <= 0:
             return
@@ -86,13 +190,18 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
 @click.argument("stop", type=float)
 @click.option("--setup", default=None, help="Setup name — uses Kelly if 20+ trades exist")
 @click.option("--equity", type=float, default=None)
-def size_cmd(entry: float, stop: float, setup: str | None, equity: float | None) -> None:
+@click.option("--bypass-circuit", is_flag=True, help="Override daily loss limit / cooldown lock (use sparingly)")
+def size_cmd(entry: float, stop: float, setup: str | None, equity: float | None, bypass_circuit: bool) -> None:
     """Compute position size for a planned trade."""
-    rec = size_trade(entry, stop, setup=setup, equity=equity)
+    rec = size_trade(entry, stop, setup=setup, equity=equity, bypass_circuit_breaker=bypass_circuit)
     eq = equity if equity is not None else CONFIG.account_equity
     console.print(f"[bold]Equity:[/bold] ${eq:,.2f}")
     console.print(f"[bold]Entry:[/bold] ${entry:.2f}  [bold]Stop:[/bold] ${stop:.2f}  "
                   f"[bold]Risk/sh:[/bold] ${abs(entry - stop):.2f}")
+    if rec.locked:
+        console.print(f"[red bold]🛑 LOCKED — {rec.lock_reason}[/red bold]")
+        console.print("[yellow]Pass --bypass-circuit to override (think twice).[/yellow]")
+        return
     console.print(f"[bold]Method:[/bold] {rec.method}")
     console.print(f"[bold]Reason:[/bold] {rec.reason}")
     console.print(f"[green bold]Shares: {rec.shares}[/green bold]   "
@@ -193,6 +302,95 @@ def ping_cmd():
     """Test the Discord webhook."""
     ok = send_text("✅ Premarket scanner ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
+
+
+@cli.command("dashboard")
+@click.option("--port", type=int, default=None, help="Port (default: DASHBOARD_PORT in .env)")
+def dashboard_cmd(port):
+    """Run the browser dashboard server (open http://localhost:PORT/ in any browser)."""
+    from .dashboard.server import serve
+    serve(port=port)
+
+
+@cli.command("dashboard-app")
+@click.option("--always-on-top/--no-always-on-top", default=True,
+              help="Pin the window above other apps (default on)")
+def dashboard_app_cmd(always_on_top):
+    """Launch the standalone native dashboard window.
+
+    Pure Tkinter — no browser, no WebView2, no Flask. Just a real desktop
+    window that reads the scanner's state file directly. Resizable, with
+    a "View → Always on top" menu toggle. The scanner must be running in
+    a separate window for the data to refresh.
+    """
+    from .dashboard.native import launch
+    launch(always_on_top=always_on_top)
+
+
+@cli.command("daily-review")
+@click.option("--post/--no-post", default=True, help="Post the review to Discord")
+def daily_review_cmd(post: bool):
+    """Aggregate today's alerts + trades and post a Discord summary."""
+    summary = build_summary()
+    console.print_json(data=summary)
+    if post:
+        ok = send_daily_review(summary)
+        console.print(f"Discord: {'OK' if ok else 'FAILED'}")
+
+
+@cli.command("ibkr-import")
+def ibkr_import_cmd():
+    """Pull today's IBKR fills via Flex Web Service into the journal."""
+    from .journal.ibkr_flex import import_today
+    try:
+        result = import_today()
+    except Exception as e:
+        console.print(f"[red]Failed: {e}[/red]")
+        return
+    console.print(f"[green]Imported: {result}[/green]")
+
+
+@cli.command("backtest")
+@click.argument("setups_csv", type=click.Path(exists=True))
+@click.option("--max-hold", default=120, help="Max minutes to hold per trade")
+def backtest_cmd(setups_csv: str, max_hold: int):
+    """Replay setups from a CSV through Polygon historical 1m bars.
+
+    CSV columns: symbol,trade_date(YYYY-MM-DD),side(long|short),entry,stop,target_1,target_2,setup_tag,catalyst
+    """
+    from datetime import date as _date
+
+    import pandas as pd
+
+    from .backtest.engine import Setup, run_backtest, summarize
+    df = pd.read_csv(setups_csv)
+    setups = [
+        Setup(
+            symbol=row["symbol"],
+            trade_date=_date.fromisoformat(str(row["trade_date"])),
+            side=row["side"],
+            entry=float(row["entry"]),
+            stop=float(row["stop"]),
+            target_1=float(row["target_1"]),
+            target_2=float(row["target_2"]),
+            setup_tag=str(row.get("setup_tag", "")),
+            catalyst=str(row.get("catalyst", "")),
+        )
+        for _, row in df.iterrows()
+    ]
+    console.print(f"[cyan]Running {len(setups)} setups (rate-limited at 5/min)...[/cyan]")
+    results = run_backtest(setups)
+    stats = summarize(results)
+    console.print(f"[bold]Aggregate:[/bold] n={stats.n_setups} triggered={stats.n_triggered} "
+                  f"winRate={stats.win_rate:.1%} ExpR={stats.expectancy_R:+.2f} "
+                  f"PF={stats.profit_factor:.2f}")
+    if stats.by_setup_tag:
+        table = Table(title="By setup tag")
+        for col in ("Tag", "N", "Win%", "ExpR"):
+            table.add_column(col)
+        for tag, b in sorted(stats.by_setup_tag.items(), key=lambda kv: -kv[1]["expectancy_R"]):
+            table.add_row(tag, str(b["n"]), f"{b['win_rate']:.1%}", f"{b['expectancy_R']:+.2f}")
+        console.print(table)
 
 
 if __name__ == "__main__":

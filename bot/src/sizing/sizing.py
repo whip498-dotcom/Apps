@@ -25,6 +25,8 @@ class SizeRecommendation:
     position_dollars: float
     method: str
     reason: str
+    locked: bool = False
+    lock_reason: str = ""
 
 
 def kelly_fraction(win_rate: float, avg_win_R: float, avg_loss_R: float) -> float:
@@ -44,11 +46,39 @@ def size_trade(
     stop: float,
     setup: Optional[str] = None,
     equity: Optional[float] = None,
+    bypass_circuit_breaker: bool = False,
 ) -> SizeRecommendation:
     if entry <= 0 or stop <= 0 or entry == stop:
         raise ValueError("entry and stop must be positive and distinct")
     eq = equity if equity is not None else CONFIG.account_equity
     risk_per_share = abs(entry - stop)
+
+    # ---- Circuit breakers ----
+    if not bypass_circuit_breaker:
+        from ..journal.review import consecutive_losses_today, daily_pnl_today
+        pnl = daily_pnl_today()
+        loss_limit = -eq * (CONFIG.daily_loss_limit_pct / 100.0)
+        if pnl <= loss_limit:
+            return SizeRecommendation(
+                shares=0, risk_dollars=0, position_dollars=0,
+                method="locked", reason="daily loss limit hit",
+                locked=True,
+                lock_reason=(
+                    f"Daily P&L ${pnl:+.2f} ≤ limit ${loss_limit:.2f} "
+                    f"({CONFIG.daily_loss_limit_pct:.1f}% of ${eq:.0f}). Stop trading today."
+                ),
+            )
+        streak = consecutive_losses_today()
+        if streak >= 2:
+            return SizeRecommendation(
+                shares=0, risk_dollars=0, position_dollars=0,
+                method="locked", reason="cooldown after consecutive losses",
+                locked=True,
+                lock_reason=(
+                    f"{streak} losses in a row today. "
+                    f"Cool down {CONFIG.consecutive_loss_cooldown_minutes} min before next trade."
+                ),
+            )
 
     base_risk_pct = CONFIG.max_risk_per_trade_pct / 100.0
     risk_pct = base_risk_pct
