@@ -67,6 +67,14 @@ class Config:
     # for actionable events (new HIGH conviction, TOP PICK change, ORB).
     enable_live_tile: bool = os.getenv("ENABLE_LIVE_TILE", "true").lower() == "true"
 
+    # Optional dedicated webhook for the live tile. When set, the tile
+    # posts/edits in this channel only — keeping it permanently visible
+    # without competing with notification messages. Recommended setup:
+    #   #premarket-status (live tile webhook here)
+    #   #premarket-alerts (DISCORD_WEBHOOK_URL here)
+    # Falls back to DISCORD_WEBHOOK_URL if empty.
+    live_tile_webhook: str = os.getenv("LIVE_TILE_WEBHOOK_URL", "")
+
     # Session top-pick: % delta a new candidate must beat by to dethrone the
     # current session leader. Prevents gold marker flicking around.
     session_top_pick_delta_pct: float = _f("SESSION_TOP_PICK_DELTA_PCT", 5.0)

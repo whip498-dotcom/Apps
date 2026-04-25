@@ -28,6 +28,49 @@ from ..data.universe import build_universe
 
 
 @dataclass
+class OvernightMover:
+    """A top mover from the universe based on absolute gap from prior close.
+
+    Distinct from Candidate — these are *informational*. They may not pass
+    the trade-lane filters (price band, float, qualifying catalyst), but
+    they're useful context: 'here's what woke up overnight in your universe.'
+    """
+    quote: Quote
+    levels: Optional[Levels]
+    catalysts: list[NewsItem] = field(default_factory=list)
+    filings: list[Filing] = field(default_factory=list)
+    short_interest_pct: Optional[float] = None
+    days_to_cover: Optional[float] = None
+
+    @property
+    def symbol(self) -> str:
+        return self.quote.symbol
+
+    @property
+    def gap_pct(self) -> float:
+        return self.quote.gap_pct
+
+    @property
+    def direction(self) -> str:
+        return "up" if self.quote.gap_pct >= 0 else "down"
+
+    @property
+    def has_dilution_risk(self) -> bool:
+        return any(f.is_dilutive for f in self.filings) or any(n.is_dilutive for n in self.catalysts)
+
+    @property
+    def top_catalyst(self) -> Optional[NewsItem]:
+        return self.catalysts[0] if self.catalysts else None
+
+
+@dataclass
+class ScanResult:
+    """One scan cycle output: trade-qualified candidates + universe movers."""
+    candidates: list["Candidate"] = field(default_factory=list)
+    movers: list[OvernightMover] = field(default_factory=list)
+
+
+@dataclass
 class Candidate:
     side: str  # 'long' | 'short'
     quote: Quote
@@ -221,13 +264,62 @@ def _classify_conviction(c: Candidate) -> tuple[str, list[str]]:
 
 # ---------- main ----------
 
-def scan() -> list[Candidate]:
+def _compute_movers(
+    quotes: dict,
+    edgar_by_ticker: dict,
+    top_n: int = 5,
+    min_abs_gap_pct: float = 5.0,
+    min_volume: int = 10_000,
+    price_min: float = 1.0,
+    price_max: float = 50.0,
+) -> list[OvernightMover]:
+    """Top N absolute movers from the universe — broader than trade-lane filters.
+
+    Used for the morning brief and the live tile 'Overnight movers' section.
+    """
+    eligible = [
+        q for q in quotes.values()
+        if price_min <= q.last <= price_max
+        and abs(q.gap_pct) >= min_abs_gap_pct
+        and q.premarket_volume >= min_volume
+    ]
+    eligible.sort(key=lambda q: abs(q.gap_pct), reverse=True)
+
+    out: list[OvernightMover] = []
+    for q in eligible[:top_n]:
+        try:
+            fs = get_float(q.symbol)
+            q.float_shares = fs
+        except Exception:
+            fs = None
+        try:
+            _, news = has_catalyst(q.symbol, hours=24)
+        except Exception:
+            news = []
+        filings = edgar_by_ticker.get(q.symbol, [])
+        # Always compute long-side levels for context (PDH/PDL/VWAP/pivots
+        # are direction-agnostic; the entry/stop/TP zones are placeholder).
+        try:
+            lv = compute_levels(q.symbol, "long", q.last)
+        except Exception:
+            lv = None
+        out.append(OvernightMover(
+            quote=q, levels=lv, catalysts=news, filings=filings,
+        ))
+    return out
+
+
+def scan() -> ScanResult:
     universe = build_universe()
     if not universe:
-        return []
+        return ScanResult()
 
     quotes = fetch_quotes(universe)
     edgar_by_ticker = filings_by_ticker(fetch_recent_filings())
+
+    # Top universe movers — informational context, not gated by trade-lane filters
+    movers = _compute_movers(quotes, edgar_by_ticker, top_n=5)
+
     candidates: list[Candidate] = []
 
     survivors: list[Quote] = [
@@ -306,7 +398,7 @@ def scan() -> list[Candidate]:
     candidates.sort(key=lambda c: c.score, reverse=True)
     if candidates:
         candidates[0].is_top_pick = True
-    return candidates
+    return ScanResult(candidates=candidates, movers=movers)
 
 
 def scan_summary(c: Candidate) -> str:

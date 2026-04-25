@@ -29,7 +29,7 @@ import requests
 from ..config import CONFIG
 from ..data.charts import render_chart
 from ..journal.review import log_alert
-from ..scanner.scanner import Candidate
+from ..scanner.scanner import Candidate, OvernightMover
 
 LONG_GREEN = 0x2ECC71
 SHORT_RED = 0xE74C3C
@@ -376,13 +376,132 @@ def _live_ranked_table_embed(cs: list[Candidate]) -> dict:
     }
 
 
-def update_live_tile(candidates: list[Candidate], window_status: str = "") -> bool:
+def _mover_full_embed(m: OvernightMover, idx: int = 1) -> dict:
+    """Detailed embed for the morning brief — one per mover."""
+    arrow = "↗" if m.gap_pct >= 0 else "↘"
+    color = LONG_GREEN if m.gap_pct >= 0 else SHORT_RED
+    if m.has_dilution_risk:
+        color = WARN_ORANGE
+
+    fields: list[dict] = [
+        {"name": "Move", "value": f"{arrow} {m.gap_pct:+.1f}%", "inline": True},
+        {"name": "Price", "value": f"${m.quote.last:.2f}", "inline": True},
+        {"name": "Prev close", "value": f"${m.quote.prev_close:.2f}", "inline": True},
+        {"name": "PM Vol", "value": f"{m.quote.premarket_volume:,}", "inline": True},
+        {"name": "RVol", "value": f"{m.quote.relative_volume:.1f}x", "inline": True},
+        {
+            "name": "Float",
+            "value": f"{m.quote.float_shares/1_000_000:.1f}M" if m.quote.float_shares else "?",
+            "inline": True,
+        },
+    ]
+
+    if m.levels:
+        lv = m.levels
+        fields.append({
+            "name": "Levels",
+            "value": (
+                f"PDH ${lv.prior_day_high:.2f} · PDC ${lv.prior_day_close:.2f} · PDL ${lv.prior_day_low:.2f}\n"
+                f"PMH ${lv.premarket_high:.2f} · PML ${lv.premarket_low:.2f} · VWAP ${lv.vwap:.2f}\n"
+                f"R2 ${lv.r2:.2f} · R1 ${lv.r1:.2f} · Pivot ${lv.pivot:.2f} · "
+                f"S1 ${lv.s1:.2f} · S2 ${lv.s2:.2f}"
+            ),
+            "inline": False,
+        })
+        # Distance to PDH (key resistance for longs)
+        if m.gap_pct >= 0:
+            dist_pdh = (lv.prior_day_high - m.quote.last) / m.quote.last * 100 if m.quote.last else 0
+            fields.append({
+                "name": "Distance to PDH",
+                "value": f"{dist_pdh:+.1f}% to ${lv.prior_day_high:.2f}",
+                "inline": True,
+            })
+
+    if m.top_catalyst:
+        cat = m.top_catalyst
+        tags = " ".join(f"`{t}`" for t in cat.tags) if cat.tags else "news"
+        fields.append({
+            "name": f"Catalyst {tags}",
+            "value": f"[{cat.headline[:200]}]({cat.url})",
+            "inline": False,
+        })
+    else:
+        fields.append({"name": "Catalyst", "value": "_no fresh catalyst found_", "inline": False})
+
+    if m.filings:
+        f = m.filings[0]
+        marker = "⚠️ " if f.is_dilutive else ""
+        fields.append({
+            "name": f"{marker}Filing — {f.form}",
+            "value": f"[{f.title[:200]}]({f.link})",
+            "inline": False,
+        })
+
+    return {
+        "title": f"#{idx} {arrow} ${m.symbol}",
+        "color": color,
+        "fields": fields,
+    }
+
+
+def send_morning_brief(movers: list[OvernightMover]) -> bool:
+    """Single Discord notification at scanner startup with top 2 overnight movers."""
+    if not CONFIG.discord_webhook or not movers:
+        return False
+    top2 = movers[:2]
+    payload = {
+        "username": "Morning Brief",
+        "content": (
+            "🌅 **Morning Brief — top overnight/aftermarket movers in your universe**\n"
+            "_Informational context. May not qualify for trade lanes — verify before sizing._"
+        ),
+        "embeds": [_mover_full_embed(m, idx=i + 1) for i, m in enumerate(top2)],
+    }
+    return _post_with_files(payload, [])
+
+
+def _live_movers_embed(movers: list[OvernightMover]) -> dict:
+    rows: list[str] = []
+    for i, m in enumerate(movers[:2], start=1):
+        arrow = "↗" if m.gap_pct >= 0 else "↘"
+        cat = m.top_catalyst.headline[:65] if m.top_catalyst else "no fresh catalyst"
+        line1 = f"**#{i} ${m.symbol}** {arrow} {m.gap_pct:+.1f}% (${m.quote.last:.2f})"
+        if m.has_dilution_risk:
+            line1 += " ⚠️ DILUTION"
+        rows.append(line1)
+        if m.levels:
+            lv = m.levels
+            rows.append(
+                f"  PDH `${lv.prior_day_high:.2f}` · PDC `${lv.prior_day_close:.2f}` · "
+                f"VWAP `${lv.vwap:.2f}` · R1 `${lv.r1:.2f}` · S1 `${lv.s1:.2f}`"
+            )
+        rows.append(f"  📰 {cat}")
+        rows.append("")
+    return {
+        "title": "🌙 Overnight movers (universe-wide)",
+        "color": 0x5DADE2,
+        "description": "\n".join(rows).rstrip() or "_no overnight movers in universe yet_",
+    }
+
+
+def update_live_tile(
+    candidates: list[Candidate],
+    movers: Optional[list[OvernightMover]] = None,
+    window_status: str = "",
+) -> bool:
     """Post or edit the persistent live status tile.
 
     Edits do NOT trigger notification sounds in Discord — they're meant
-    as a silent always-on dashboard. Pin the message to keep it visible.
+    as a silent always-on dashboard.
+
+    Webhook: uses LIVE_TILE_WEBHOOK_URL if set (recommended — dedicated
+    #premarket-status channel keeps the tile permanently visible), else
+    falls back to DISCORD_WEBHOOK_URL.
     """
-    if not CONFIG.discord_webhook or not CONFIG.enable_live_tile:
+    if not CONFIG.enable_live_tile:
+        return False
+    webhook = CONFIG.live_tile_webhook or CONFIG.discord_webhook
+    if not webhook:
         return False
 
     from datetime import datetime
@@ -402,6 +521,9 @@ def update_live_tile(candidates: list[Candidate], window_status: str = "") -> bo
             "description": "Scanner is running. Tile updates each cycle.",
         })
 
+    if movers:
+        embeds.append(_live_movers_embed(movers))
+
     content = f"📊 **Live Status — last update {now_ny}**"
     if window_status:
         content += f"  ·  {window_status}"
@@ -414,7 +536,7 @@ def update_live_tile(candidates: list[Candidate], window_status: str = "") -> bo
 
     msg_id = _read_live_msg_id()
     if msg_id:
-        url = f"{CONFIG.discord_webhook}/messages/{msg_id}"
+        url = f"{webhook}/messages/{msg_id}"
         try:
             r = requests.patch(
                 url,
@@ -430,7 +552,7 @@ def update_live_tile(candidates: list[Candidate], window_status: str = "") -> bo
 
     try:
         r = requests.post(
-            CONFIG.discord_webhook + "?wait=true",
+            webhook + "?wait=true",
             data=json.dumps(payload),
             headers={"Content-Type": "application/json"},
             timeout=10,

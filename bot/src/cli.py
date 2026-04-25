@@ -18,7 +18,13 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_daily_review, send_scan, send_text, update_live_tile
+from .alerts.discord import (
+    send_daily_review,
+    send_morning_brief,
+    send_scan,
+    send_text,
+    update_live_tile,
+)
 from .alerts.state import AlertTracker, in_trading_window
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
@@ -95,6 +101,7 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
 
     tracker = AlertTracker()
     scheduler = Scheduler(log=lambda s: console.print(f"[magenta]{s}[/magenta]")) if auto else None
+    morning_brief_sent = False
 
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
@@ -106,15 +113,28 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
             f"window {CONFIG.trading_window_start}–{CONFIG.trading_window_end} NY"
         )
 
-        cs = scan()[:top]
+        result = scan()
+        cs = result.candidates[:top]
+        movers = result.movers
 
         # Update session top pick — leader stays put unless beaten by 5%+
         new_leader, prev = tracker.update_session_top(cs)
         _print_candidates(cs)
+        if movers:
+            console.print(
+                f"[blue]Overnight movers in universe (top {min(2, len(movers))}):[/blue] "
+                + " · ".join(f"${m.symbol} {m.gap_pct:+.1f}%" for m in movers[:2])
+            )
 
         # Always refresh the live status tile (silent edit, no notification ping)
         window_status = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
-        update_live_tile(cs, window_status=window_status)
+        update_live_tile(cs, movers=movers, window_status=window_status)
+
+        # One-time morning brief on the first scan that has movers (and Discord is gated open)
+        if alert and not morning_brief_sent and movers and (within_window or ignore_window):
+            if send_morning_brief(movers):
+                morning_brief_sent = True
+                console.print("[bold cyan]🌅 Morning brief sent.[/bold cyan]")
 
         if alert and cs and (within_window or ignore_window):
             items: list[tuple[Candidate, str, float | None]] = []
