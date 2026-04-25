@@ -165,6 +165,13 @@
       <div class="empty">No overnight movers detected yet.</div>
     </div>
   </section>
+
+  <section class="card">
+    <h2>📈 Latest Backtest</h2>
+    <div class="body" id="backtest-body">
+      <div class="empty">No backtest runs yet. Run: <code class="mono">python -m src.cli backtest setups.csv</code></div>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -325,6 +332,44 @@ function renderMovers(movers) {
   root.innerHTML = html;
 }
 
+function renderBacktest(bt) {
+  const root = document.getElementById("backtest-body");
+  if (!bt) {
+    root.innerHTML = '<div class="empty">No backtest runs yet. Run: <code class="mono">python -m src.cli backtest setups.csv</code></div>';
+    return;
+  }
+  const expr = Number(bt.expectancy_R || 0);
+  const exprColor = expr >= 0 ? "gain" : "loss";
+  let html = `
+    <div class="meta">${bt.label || "run"} · ${bt.source || "cli"} · ${relTime(bt.run_at)}</div>
+    <div class="stat-row" style="margin-top:10px">
+      <div class="stat"><div class="label">Setups</div><div class="value">${bt.n_setups}</div></div>
+      <div class="stat"><div class="label">Triggered</div><div class="value">${bt.n_triggered}</div></div>
+      <div class="stat"><div class="label">Win rate</div><div class="value">${(bt.win_rate * 100).toFixed(1)}%</div></div>
+      <div class="stat"><div class="label">E[R]</div><div class="value ${exprColor}">${expr >= 0 ? "+" : ""}${expr.toFixed(2)}</div></div>
+      <div class="stat"><div class="label">PF</div><div class="value">${Number(bt.profit_factor).toFixed(2)}</div></div>
+      <div class="stat"><div class="label">Avg win/loss R</div><div class="value">${Number(bt.avg_win_R).toFixed(2)} / ${Number(bt.avg_loss_R).toFixed(2)}</div></div>
+    </div>`;
+
+  const byTag = bt.by_setup_tag || {};
+  const entries = Object.entries(byTag).sort((a,b) => (b[1].expectancy_R || 0) - (a[1].expectancy_R || 0));
+  if (entries.length) {
+    html += `<table style="margin-top:14px">
+      <thead><tr><th>Setup tag</th><th class="right">N</th><th class="right">Win%</th><th class="right">E[R]</th></tr></thead>
+      <tbody>`;
+    entries.forEach(([tag, b]) => {
+      const sign = b.expectancy_R >= 0 ? "gain" : "loss";
+      html += `<tr><td class="mono">${tag}</td>
+        <td class="right mono">${b.n}</td>
+        <td class="right mono">${(b.win_rate * 100).toFixed(1)}%</td>
+        <td class="right mono ${sign}">${b.expectancy_R >= 0 ? "+" : ""}${Number(b.expectancy_R).toFixed(2)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `<div class="meta" style="margin-top:10px">More: <code class="mono">python -m src.cli backtest-results --history --trades</code></div>`;
+  root.innerHTML = html;
+}
+
 async function refresh() {
   try {
     const res = await fetch("/api/state", { cache: "no-store" });
@@ -346,6 +391,7 @@ async function refresh() {
     document.getElementById("top-pick-body").innerHTML = renderTopPick(top);
     renderCandidates(candidates);
     renderMovers(s.movers || []);
+    renderBacktest(s.latest_backtest);
   } catch (e) {
     console.error("refresh failed", e);
   }

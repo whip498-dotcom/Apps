@@ -233,6 +233,11 @@ class Dashboard:
         self.movers_inner = tk.Frame(movers_card, bg=PANEL)
         self.movers_inner.pack(fill="both", expand=True, padx=14, pady=(0, 14))
 
+        # Backtest card
+        bt_card = self._make_card(self.body, "📈 Latest Backtest")
+        self.bt_inner = tk.Frame(bt_card, bg=PANEL)
+        self.bt_inner.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+
     def _make_card(self, parent: tk.Widget, title: str,
                     border_color: str = BORDER) -> tk.Frame:
         wrapper = tk.Frame(parent, bg=border_color, padx=1, pady=1)
@@ -254,6 +259,7 @@ class Dashboard:
             self._render_top_pick(top)
             self._render_candidates(candidates)
             self._render_movers(state.get("movers") or [])
+            self._render_backtest(state.get("latest_backtest"))
         except Exception as e:
             self.updated_label.configure(text=f"refresh err: {e}", foreground=RED)
         finally:
@@ -504,6 +510,94 @@ class Dashboard:
                 url = fil.get("link")
                 if url:
                     link.bind("<Button-1>", lambda _e, u=url: webbrowser.open(u))
+
+
+    def _render_backtest(self, bt: dict | None) -> None:
+        for w in self.bt_inner.winfo_children():
+            w.destroy()
+        if not bt:
+            ttk.Label(
+                self.bt_inner,
+                text=("No backtest runs yet. "
+                      "Run: python -m src.cli backtest setups.csv  (or wait for the auto Sunday run)"),
+                style="Muted.TLabel",
+            ).pack(anchor="w", pady=8)
+            return
+
+        # Header line: when, label, source
+        head = tk.Frame(self.bt_inner, bg=PANEL)
+        head.pack(fill="x", pady=(0, 8))
+        run_at_rel = _rel_time(bt.get("run_at"))
+        tk.Label(
+            head,
+            text=f"{bt.get('label','run')} · {bt.get('source','cli')} · {run_at_rel}",
+            bg=PANEL, fg=MUTED, font=self.font_label,
+        ).pack(anchor="w")
+
+        # Headline stats
+        srow = tk.Frame(self.bt_inner, bg=PANEL)
+        srow.pack(fill="x", pady=(0, 10))
+        cells = [
+            ("Setups", str(bt.get("n_setups", 0))),
+            ("Triggered", str(bt.get("n_triggered", 0))),
+            ("Win rate", f"{bt.get('win_rate', 0):.1%}"),
+            ("E[R]", f"{bt.get('expectancy_R', 0):+.2f}"),
+            ("PF", f"{bt.get('profit_factor', 0):.2f}"),
+            ("Avg win R", f"{bt.get('avg_win_R', 0):+.2f}"),
+            ("Avg loss R", f"{bt.get('avg_loss_R', 0):+.2f}"),
+        ]
+        for i, (label, val) in enumerate(cells):
+            color = TEXT
+            if label == "E[R]":
+                color = GREEN if bt.get("expectancy_R", 0) > 0 else RED
+            cell = tk.Frame(
+                srow, bg=PANEL2, padx=10, pady=6,
+                highlightbackground=BORDER, highlightthickness=1,
+            )
+            cell.grid(row=0, column=i, sticky="ew", padx=4)
+            srow.grid_columnconfigure(i, weight=1, uniform="bts")
+            tk.Label(cell, text=label.upper(), bg=PANEL2, fg=MUTED,
+                     font=self.font_label).pack(anchor="w")
+            tk.Label(cell, text=val, bg=PANEL2, fg=color,
+                     font=self.font_h2).pack(anchor="w")
+
+        # By-setup-tag table
+        by_tag = bt.get("by_setup_tag") or {}
+        if by_tag:
+            tk.Label(self.bt_inner, text="BY SETUP TAG", bg=PANEL, fg=MUTED,
+                     font=self.font_label).pack(anchor="w", pady=(4, 4))
+            tag_table = ttk.Treeview(
+                self.bt_inner,
+                columns=("tag", "n", "win", "expr"),
+                show="headings",
+                style="Cands.Treeview",
+                height=min(6, len(by_tag)),
+            )
+            for col, label, w in [
+                ("tag", "Setup tag", 200),
+                ("n", "N", 60),
+                ("win", "Win%", 80),
+                ("expr", "E[R]", 80),
+            ]:
+                tag_table.heading(col, text=label)
+                tag_table.column(col, width=w, anchor="w" if col == "tag" else "e")
+            for tag, b in sorted(by_tag.items(), key=lambda kv: -kv[1].get("expectancy_R", 0)):
+                tag_table.insert(
+                    "", "end",
+                    values=(
+                        tag, b.get("n", 0),
+                        f"{b.get('win_rate', 0):.1%}",
+                        f"{b.get('expectancy_R', 0):+.2f}",
+                    ),
+                )
+            tag_table.pack(fill="x")
+
+        tk.Label(
+            self.bt_inner,
+            text=("More: python -m src.cli backtest-results --history --trades  "
+                  "(file: data_cache/backtest_history.jsonl)"),
+            bg=PANEL, fg=MUTED, font=self.font_label,
+        ).pack(anchor="w", pady=(8, 0))
 
 
 def launch(always_on_top: bool = True) -> None:

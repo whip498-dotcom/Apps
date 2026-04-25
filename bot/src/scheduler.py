@@ -193,6 +193,7 @@ class Scheduler:
 
         from .backtest.engine import run_backtest, summarize
         from .backtest.from_alerts import build_setups_from_alerts
+        from .backtest.storage import save_run
 
         setups = build_setups_from_alerts(days=7, min_conviction="high")
         if not setups:
@@ -201,8 +202,10 @@ class Scheduler:
             return "skip:no_setups"
 
         self.log(f"[scheduler] Auto-backtest starting: {len(setups)} setups (≈{len(setups)*15}s)")
-        results = run_backtest(setups[:30])  # cap to keep runtime sane
+        capped = setups[:30]
+        results = run_backtest(capped)
         stats = summarize(results)
+        save_run(stats, results, label=f"auto-{week_key}", source="auto-weekly")
         msg = (
             f"📈 **Auto-backtest — week {week_key}**\n"
             f"Setups: {stats.n_setups} (triggered: {stats.n_triggered})\n"

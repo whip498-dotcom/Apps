@@ -353,8 +353,12 @@ def ibkr_import_cmd():
 @cli.command("backtest")
 @click.argument("setups_csv", type=click.Path(exists=True))
 @click.option("--max-hold", default=120, help="Max minutes to hold per trade")
-def backtest_cmd(setups_csv: str, max_hold: int):
+@click.option("--label", default="manual", help="Tag this run for the history (e.g. 'q1-fda-runners')")
+def backtest_cmd(setups_csv: str, max_hold: int, label: str):
     """Replay setups from a CSV through Polygon historical 1m bars.
+
+    Result is saved to data_cache/backtest_history.jsonl AND posted to the
+    dashboard. View past runs with: python -m src.cli backtest-results
 
     CSV columns: symbol,trade_date(YYYY-MM-DD),side(long|short),entry,stop,target_1,target_2,setup_tag,catalyst
     """
@@ -363,6 +367,7 @@ def backtest_cmd(setups_csv: str, max_hold: int):
     import pandas as pd
 
     from .backtest.engine import Setup, run_backtest, summarize
+    from .backtest.storage import save_run
     df = pd.read_csv(setups_csv)
     setups = [
         Setup(
@@ -381,6 +386,7 @@ def backtest_cmd(setups_csv: str, max_hold: int):
     console.print(f"[cyan]Running {len(setups)} setups (rate-limited at 5/min)...[/cyan]")
     results = run_backtest(setups)
     stats = summarize(results)
+    save_run(stats, results, label=label, source="cli")
     console.print(f"[bold]Aggregate:[/bold] n={stats.n_setups} triggered={stats.n_triggered} "
                   f"winRate={stats.win_rate:.1%} ExpR={stats.expectancy_R:+.2f} "
                   f"PF={stats.profit_factor:.2f}")
@@ -391,6 +397,57 @@ def backtest_cmd(setups_csv: str, max_hold: int):
         for tag, b in sorted(stats.by_setup_tag.items(), key=lambda kv: -kv[1]["expectancy_R"]):
             table.add_row(tag, str(b["n"]), f"{b['win_rate']:.1%}", f"{b['expectancy_R']:+.2f}")
         console.print(table)
+    console.print(f"[green]Saved to backtest history. View with: python -m src.cli backtest-results[/green]")
+
+
+@cli.command("backtest-results")
+@click.option("--history/--latest", default=False,
+              help="Show the last 10 runs instead of just the most recent")
+@click.option("--trades/--no-trades", default=False, help="List individual trade results")
+def backtest_results_cmd(history: bool, trades: bool):
+    """Show past backtest results (no Polygon calls — just reads the history file)."""
+    from .backtest.storage import latest_run, load_history
+
+    runs = load_history(limit=10) if history else ([latest_run()] if latest_run() else [])
+    if not runs:
+        console.print("[yellow]No backtest runs yet. "
+                      "Run: python -m src.cli backtest setups.csv (or wait for the auto Sunday run)[/yellow]")
+        return
+
+    for run in reversed(runs):
+        console.rule(f"{run['run_at']}  ·  {run['label']}  ·  source={run['source']}")
+        console.print(
+            f"[bold]n={run['n_setups']}[/bold]  triggered={run['n_triggered']}  "
+            f"winRate=[cyan]{run['win_rate']:.1%}[/cyan]  "
+            f"ExpR=[bold]{run['expectancy_R']:+.2f}[/bold]  "
+            f"PF={run['profit_factor']:.2f}  "
+            f"avgWin={run['avg_win_R']:+.2f}  avgLoss={run['avg_loss_R']:+.2f}"
+        )
+        if run.get("by_setup_tag"):
+            t = Table(title="By setup tag")
+            for col in ("Tag", "N", "Win%", "ExpR"):
+                t.add_column(col)
+            for tag, b in sorted(run["by_setup_tag"].items(),
+                                 key=lambda kv: -kv[1].get("expectancy_R", 0)):
+                t.add_row(tag, str(b.get("n", 0)),
+                          f"{b.get('win_rate', 0):.1%}",
+                          f"{b.get('expectancy_R', 0):+.2f}")
+            console.print(t)
+        if trades and run.get("trades"):
+            tt = Table(title=f"Trades ({len(run['trades'])})")
+            for col in ("Date", "Symbol", "Side", "Tag", "R", "MaxFav", "MaxAdv", "T1", "T2", "Stop"):
+                tt.add_column(col)
+            for r in run["trades"][:50]:
+                tt.add_row(
+                    r["trade_date"], r["symbol"], r["side"], r.get("setup_tag", ""),
+                    f"{r['r_multiple']:+.2f}",
+                    f"{r['max_favorable_R']:+.2f}",
+                    f"{r['max_adverse_R']:+.2f}",
+                    "✓" if r["hit_target_1"] else "—",
+                    "✓" if r["hit_target_2"] else "—",
+                    "✓" if r["hit_stop"] else "—",
+                )
+            console.print(tt)
 
 
 if __name__ == "__main__":

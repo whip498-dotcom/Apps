@@ -112,6 +112,14 @@ def write_state(
     *,
     new_top_pick_change: Optional[dict] = None,
 ) -> None:
+    # Latest backtest summary (read-only — never writes)
+    latest_bt = None
+    try:
+        from ..backtest.storage import latest_run
+        latest_bt = latest_run()
+    except Exception:
+        latest_bt = None
+
     payload: dict[str, Any] = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "window_status": window_status,
@@ -120,6 +128,7 @@ def write_state(
         "candidates": [_candidate_dict(c) for c in candidates],
         "movers": [_mover_dict(m) for m in movers],
         "new_top_pick_change": new_top_pick_change,
+        "latest_backtest": latest_bt,
     }
     STATE_FILE.write_text(json.dumps(payload, indent=2))
 
