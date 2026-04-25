@@ -2,11 +2,13 @@
 
 Usage examples:
 
-  python -m src.cli scan                  # one-shot squeeze scan
-  python -m src.cli scan --loop 60        # rescan every 60s, alert new hits
-  python -m src.cli watch                 # live conviction ranking (in-place)
+  python -m src.cli scan                       # one-shot squeeze scan
+  python -m src.cli scan --loop 60             # rescan every 60s, alert new hits
+  python -m src.cli watch                      # live conviction ranking (in-place)
   python -m src.cli watch --interval 15 --top 20
-  python -m src.cli size 4.20 3.95        # sizing for entry=$4.20 stop=$3.95
+  python -m src.cli briefing                   # Claude daily briefing (auto-detect slot)
+  python -m src.cli briefing --slot premarket  # force a specific slot
+  python -m src.cli size 4.20 3.95             # sizing for entry=$4.20 stop=$3.95
   python -m src.cli enter NVNI gap_and_go 4.20 3.95 200
   python -m src.cli exit 17 5.10
   python -m src.cli stats
@@ -20,7 +22,9 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_candidates, send_text
+from .alerts.discord import send_briefing_payload, send_candidates, send_text
+from .briefing.briefing import ALL_SLOTS, auto_slot, run_briefing
+from .briefing.render import briefing_to_discord_payload, render_briefing
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.stats import compute_stats, overall_stats
@@ -76,6 +80,23 @@ def watch_cmd(interval: int, top: int) -> None:
         live_watch(interval=interval, top=top, console=console)
     except KeyboardInterrupt:
         console.print("\n[yellow]EdgeHawk watch stopped.[/yellow]")
+
+
+@cli.command("briefing")
+@click.option("--slot", type=click.Choice(list(ALL_SLOTS)), default=None,
+              help="Briefing slot. Auto-detected from current ET time if omitted.")
+@click.option("--alert/--no-alert", default=True, help="Post to Discord")
+@click.option("--print/--no-print", "do_print", default=True, help="Render to terminal")
+def briefing_cmd(slot, alert, do_print) -> None:
+    """Generate Claude's daily briefing (3 longs + 3 shorts, levels & timing)."""
+    chosen = slot or auto_slot()
+    console.print(f"[cyan]Running EdgeHawk briefing — slot={chosen}[/cyan]")
+    briefing = run_briefing(chosen)
+    if do_print:
+        render_briefing(briefing, console)
+    if alert:
+        ok = send_briefing_payload(briefing_to_discord_payload(briefing))
+        console.print(f"[cyan]Discord briefing posted: {ok}[/cyan]")
 
 
 @cli.command("scan")

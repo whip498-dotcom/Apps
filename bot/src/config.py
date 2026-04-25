@@ -60,6 +60,7 @@ class Config:
     discord_webhook: str = os.getenv("DISCORD_WEBHOOK_URL", "")
     polygon_key: str = os.getenv("POLYGON_API_KEY", "")
     sec_user_agent: str = os.getenv("SEC_USER_AGENT", "Trading Bot contact@example.com")
+    anthropic_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
     price_min: float = _f("SCAN_PRICE_MIN", 3.0)
     price_max: float = _f("SCAN_PRICE_MAX", 20.0)

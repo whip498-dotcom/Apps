@@ -118,3 +118,16 @@ def send_text(message: str) -> bool:
         timeout=10,
     )
     return r.status_code in (200, 204)
+
+
+def send_briefing_payload(payload: dict) -> bool:
+    """Send a pre-built briefing webhook payload (built by briefing.render)."""
+    if not CONFIG.discord_webhook:
+        return False
+    r = requests.post(
+        CONFIG.discord_webhook,
+        data=json.dumps(payload),
+        headers={"Content-Type": "application/json"},
+        timeout=15,
+    )
+    return r.status_code in (200, 204)
