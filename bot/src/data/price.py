@@ -5,6 +5,7 @@ on the current day. We use it as the primary source.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
@@ -67,14 +68,24 @@ def fetch_quote(symbol: str) -> Optional[Quote]:
     )
 
 
-def fetch_quotes(symbols: list[str]) -> dict[str, Quote]:
-    """Bulk fetch with graceful failure on any single symbol."""
+def fetch_quotes(symbols: list[str], max_workers: int = 8) -> dict[str, Quote]:
+    """Bulk fetch with graceful failure on any single symbol.
+
+    Runs in a thread pool — yfinance is I/O bound on HTTP calls, so each
+    sequential fetch with retries was making the 24/7 scan loop drag long
+    enough that later names in the universe never got their turn before the
+    next iteration kicked off.
+    """
     out: dict[str, Quote] = {}
-    for s in symbols:
-        try:
-            q = fetch_quote(s)
+    if not symbols:
+        return out
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(fetch_quote, s): s for s in symbols}
+        for fut in as_completed(futures):
+            try:
+                q = fut.result()
+            except Exception:
+                continue
             if q is not None:
-                out[s] = q
-        except Exception:
-            continue
+                out[q.symbol] = q
     return out

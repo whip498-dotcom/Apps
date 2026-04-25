@@ -59,7 +59,7 @@ def _passes_float(float_shares: int | None) -> bool:
     if float_shares is None:
         # Be conservative: skip when unknown to avoid trapped large-caps
         return False
-    return float_shares <= CONFIG.max_float
+    return float_shares < CONFIG.max_float
 
 
 def _score(c: Candidate) -> float:
@@ -117,7 +117,13 @@ def scan() -> list[Candidate]:
         c.score = _score(c)
         candidates.append(c)
 
-    candidates.sort(key=lambda c: c.score, reverse=True)
+    # Sort by score desc, then rvol desc, then gap desc. The extra keys break
+    # ties so the top-N isn't dominated by alphabetically-early symbols when
+    # many candidates share the same score (e.g. all have no catalyst).
+    candidates.sort(
+        key=lambda c: (c.score, c.quote.relative_volume, c.quote.gap_pct),
+        reverse=True,
+    )
     return candidates
 
 

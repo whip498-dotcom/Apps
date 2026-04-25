@@ -11,6 +11,7 @@ surfacing the names that actually move premarket.
 """
 from __future__ import annotations
 
+import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
@@ -70,5 +71,9 @@ def build_universe(extra: Iterable[str] = ()) -> list[str]:
     syms.update(_from_edgar())
     syms.update(_from_finnhub_market_news())
     syms.update(s.upper() for s in extra)
-    # Filter out obvious indices/ETFs by length heuristic — small caps are 3-5 char
-    return sorted(s for s in syms if 1 <= len(s) <= 5 and s.isalpha())
+    # Shuffle so each scan iteration samples the universe in a different order.
+    # Sorting alphabetically biased the top-N toward A-D names whenever scores
+    # tied (stable sort) and starved late-alphabet names of Finnhub rate budget.
+    out = [s for s in syms if 1 <= len(s) <= 5 and s.isalpha()]
+    random.shuffle(out)
+    return out
