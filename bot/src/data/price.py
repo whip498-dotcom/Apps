@@ -6,13 +6,15 @@ on the current day. We use it as the primary source.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+from .levels import KeyLevels, compute_levels
 
 
 @dataclass
@@ -24,6 +26,7 @@ class Quote:
     avg_volume_30d: float
     gap_pct: float
     timestamp: datetime
+    levels: KeyLevels = field(default_factory=lambda: KeyLevels(symbol=""))
 
     @property
     def relative_volume(self) -> float:
@@ -57,6 +60,8 @@ def fetch_quote(symbol: str) -> Optional[Quote]:
     pm_vol = int(today_bars["Volume"].sum())
     gap_pct = ((last / prev_close) - 1.0) * 100.0 if prev_close else 0.0
 
+    levels = compute_levels(symbol, intraday, daily)
+
     return Quote(
         symbol=symbol.upper(),
         last=last,
@@ -65,6 +70,7 @@ def fetch_quote(symbol: str) -> Optional[Quote]:
         avg_volume_30d=avg_vol_30d,
         gap_pct=gap_pct,
         timestamp=datetime.now(timezone.utc),
+        levels=levels,
     )
 
 

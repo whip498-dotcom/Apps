@@ -16,9 +16,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
-import finnhub
-
 from ..config import CONFIG
+from . import finnhub_pool
 from .edgar import fetch_recent_filings, filings_by_ticker
 
 WATCHLIST = CONFIG.cache_dir.parent / "watchlist.txt"
@@ -39,9 +38,9 @@ def _read_watchlist() -> set[str]:
 
 
 def _from_finnhub_market_news(hours: int = 12) -> set[str]:
-    if not CONFIG.finnhub_key:
+    client = finnhub_pool.next_client()
+    if client is None:
         return set()
-    client = finnhub.Client(api_key=CONFIG.finnhub_key)
     try:
         news = client.general_news("general", min_id=0)
     except Exception:

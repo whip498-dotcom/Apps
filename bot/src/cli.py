@@ -22,7 +22,7 @@ from .alerts.discord import send_candidates, send_text
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.stats import compute_stats, overall_stats
-from .scanner.scanner import Candidate, scan, scan_summary
+from .scanner.scanner import Candidate, alert_worthy, scan, scan_summary
 from .sizing.sizing import size_trade
 
 console = Console()
@@ -32,19 +32,27 @@ def _print_candidates(cs: list[Candidate]) -> None:
     if not cs:
         console.print("[yellow]No candidates passed filters.[/yellow]")
         return
-    table = Table(title=f"Premarket candidates ({len(cs)})")
-    for col in ("Symbol", "Price", "Gap%", "RVol", "PM Vol", "Float", "Score", "Catalyst", "Flags"):
+    table = Table(title=f"Squeeze candidates ({len(cs)})")
+    for col in ("Sym", "Conf", "Price", "Gap%", "RVol", "Float", "SI%", "DTC", "PMH", "PDH", "Catalyst", "Flags"):
         table.add_column(col)
     for c in cs:
-        cat = c.catalysts[0].headline[:60] if c.catalysts else ""
+        cat = c.catalysts[0].headline[:50] if c.catalysts else ""
+        si = c.short_interest
+        si_pct = f"{si.short_pct_float*100:.0f}%" if si and si.short_pct_float is not None else "?"
+        dtc = f"{si.days_to_cover:.1f}" if si and si.days_to_cover is not None else "?"
+        pmh = f"${c.quote.levels.pmh:.2f}" if c.quote.levels.pmh is not None else "?"
+        pdh = f"${c.quote.levels.pdh:.2f}" if c.quote.levels.pdh is not None else "?"
         table.add_row(
             c.symbol,
+            f"{c.confidence}/10",
             f"${c.quote.last:.2f}",
             f"{c.quote.gap_pct:+.1f}",
             f"{c.quote.relative_volume:.1f}x",
-            f"{c.quote.premarket_volume:,}",
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "?",
-            f"{c.score:.1f}",
+            si_pct,
+            dtc,
+            pmh,
+            pdh,
             cat,
             ",".join(c.flags),
         )
@@ -70,10 +78,14 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
         _print_candidates(cs)
 
         if alert:
-            new = [c for c in cs if c.symbol not in seen]
+            # Only fire on confidence >= CONFIG.min_confidence so the
+            # #trade-ideas channel doesn't get spammed with mid-tier setups.
+            new = [c for c in cs if c.symbol not in seen and alert_worthy(c)]
             if new:
                 ok = send_candidates(new, top_n=top)
-                console.print(f"[cyan]Alert sent: {ok} ({len(new)} new)[/cyan]")
+                console.print(
+                    f"[cyan]Alert sent: {ok} ({len(new)} new ≥ conf {CONFIG.min_confidence})[/cyan]"
+                )
                 seen.update(c.symbol for c in new)
 
         if loop_seconds <= 0:
