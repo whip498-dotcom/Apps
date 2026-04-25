@@ -441,9 +441,16 @@ class Dashboard:
                      font=self.font_mono, justify="left").pack(anchor="w")
 
     def _render_candidates(self, rows: list[dict]) -> None:
-        for iid in self.cands.get_children():
-            self.cands.delete(iid)
-        for i, c in enumerate(rows[:12], start=1):
+        """Diff-based update: reuse existing Treeview rows where possible.
+
+        Avoids the flicker that comes from delete-all + insert-all every
+        refresh. Rows are matched positionally (rank 1 stays in slot 1).
+        Only the diff between current and new state is applied.
+        """
+        existing_iids = list(self.cands.get_children())
+        new_rows = list(rows[:12])
+
+        for i, c in enumerate(new_rows, start=1):
             lv = c.get("levels") or {}
             entry = (
                 f"{_fmt_money(lv['entry_low'])}–{_fmt_money(lv['entry_high']).replace('$','')}"
@@ -456,20 +463,28 @@ class Dashboard:
             side = "🟢 L" if c["side"] == "long" else "🔴 S"
             conv = c.get("conviction", "low").upper()
             tags = ("toppick",) if c.get("is_top_pick") else (c["side"],)
-            self.cands.insert(
-                "", "end",
-                values=(
-                    i, sym, side, conv, c.get("setup", ""),
-                    _fmt_money(c.get("price")),
-                    _fmt_pct(c.get("gap_pct")),
-                    f"{c.get('rvol', 0):.1f}x",
-                    f"{c.get('rotation', 0):.2f}x",
-                    _fmt_float(c.get("float_shares")),
-                    entry, stop, tp1, rr,
-                    f"{c.get('score', 0):.1f}",
-                ),
-                tags=tags,
+            values = (
+                i, sym, side, conv, c.get("setup", ""),
+                _fmt_money(c.get("price")),
+                _fmt_pct(c.get("gap_pct")),
+                f"{c.get('rvol', 0):.1f}x",
+                f"{c.get('rotation', 0):.2f}x",
+                _fmt_float(c.get("float_shares")),
+                entry, stop, tp1, rr,
+                f"{c.get('score', 0):.1f}",
             )
+
+            slot = i - 1
+            if slot < len(existing_iids):
+                # Update in place — no flicker
+                self.cands.item(existing_iids[slot], values=values, tags=tags)
+            else:
+                # New row beyond what we had — insert
+                self.cands.insert("", "end", values=values, tags=tags)
+
+        # Trim surplus rows if the candidate list shrank
+        for iid in existing_iids[len(new_rows):]:
+            self.cands.delete(iid)
 
     def _render_movers(self, movers: list[dict]) -> None:
         for w in self.movers_inner.winfo_children():
