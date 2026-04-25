@@ -25,6 +25,16 @@ A Python toolkit for IBKR AU traders running premarket-into-the-open small cap l
 
 ## Setup
 
+### Windows (double-click)
+
+1. Install [Git](https://git-scm.com/downloads), [Python 3.12+](https://www.python.org/downloads/) (tick *"Add Python to PATH"*).
+2. Clone the repo and switch to this branch.
+3. Open the `bot` folder, **double-click `setup.bat`**. It creates the venv, installs deps, and opens `.env` for you to fill in.
+4. Each morning, double-click **`start-scanner.bat`** — it pulls the latest code, activates the venv, and runs the scan loop with Discord alerts.
+5. Anytime, double-click **`stats.bat`** to see per-setup expectancy + recent trades.
+
+### macOS / Linux
+
 ```bash
 cd bot
 python3 -m venv .venv && source .venv/bin/activate
@@ -33,7 +43,8 @@ cp .env.example .env
 # edit .env — at minimum set FINNHUB_API_KEY and DISCORD_WEBHOOK_URL
 ```
 
-Get free API keys:
+### API keys
+
 - **Finnhub** (60 req/min, real-time US news): https://finnhub.io/register
 - **Discord webhook**: server Settings → Integrations → Webhooks → New Webhook
 
