@@ -315,16 +315,16 @@ def dashboard_cmd(port):
 @cli.command("dashboard-app")
 @click.option("--always-on-top/--no-always-on-top", default=True,
               help="Pin the window above other apps (default on)")
-@click.option("--port", type=int, default=None, help="Port (default: DASHBOARD_PORT)")
-def dashboard_app_cmd(always_on_top, port):
-    """Launch the dashboard as a native desktop window (PyWebView).
+def dashboard_app_cmd(always_on_top):
+    """Launch the standalone native dashboard window.
 
-    Resizable, optional always-on-top, no browser chrome. Same data as the
-    browser dashboard. The scanner must be running in a separate window for
-    state to update.
+    Pure Tkinter — no browser, no WebView2, no Flask. Just a real desktop
+    window that reads the scanner's state file directly. Resizable, with
+    a "View → Always on top" menu toggle. The scanner must be running in
+    a separate window for the data to refresh.
     """
-    from .dashboard.desktop import launch
-    launch(always_on_top=always_on_top, port=port)
+    from .dashboard.native import launch
+    launch(always_on_top=always_on_top)
 
 
 @cli.command("daily-review")
