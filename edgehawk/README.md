@@ -91,14 +91,14 @@ To run longs only while you build short stats: set `ENABLE_SHORT_LANE=false` in 
 
 1. Install [Git](https://git-scm.com/downloads), [Python 3.12+](https://www.python.org/downloads/) (tick *"Add Python to PATH"*).
 2. Clone the repo and switch to this branch.
-3. Open the `bot` folder, **double-click `setup.bat`**. It creates the venv, installs deps, and opens `.env` for you to fill in.
+3. Open the `edgehawk` folder, **double-click `setup.bat`**. It creates the venv, installs deps, and opens `.env` for you to fill in.
 4. Each morning, double-click **`start-scanner.bat`** — it pulls the latest code, activates the venv, and runs the scan loop with Discord alerts.
 5. Anytime, double-click **`stats.bat`** to see per-setup expectancy + recent trades.
 
 ### macOS / Linux
 
 ```bash
-cd bot
+cd edgehawk
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
