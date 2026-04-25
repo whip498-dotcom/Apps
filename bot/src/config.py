@@ -75,6 +75,10 @@ class Config:
     # Falls back to DISCORD_WEBHOOK_URL if empty.
     live_tile_webhook: str = os.getenv("LIVE_TILE_WEBHOOK_URL", "")
 
+    # Standalone local dashboard (Flask app) — same data as the live tile,
+    # rendered in a browser window. Runs on http://127.0.0.1:DASHBOARD_PORT.
+    dashboard_port: int = _i("DASHBOARD_PORT", 8765)
+
     # Session top-pick: % delta a new candidate must beat by to dethrone the
     # current session leader. Prevents gold marker flicking around.
     session_top_pick_delta_pct: float = _f("SESSION_TOP_PICK_DELTA_PCT", 5.0)

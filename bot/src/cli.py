@@ -26,6 +26,7 @@ from .alerts.discord import (
     update_live_tile,
 )
 from .alerts.state import AlertTracker, in_trading_window
+from .dashboard.state import write_state as write_dashboard_state
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.review import build_summary
@@ -129,6 +130,12 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
         # Always refresh the live status tile (silent edit, no notification ping)
         window_status = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
         update_live_tile(cs, movers=movers, window_status=window_status)
+
+        # Always write the dashboard state file so the desktop app reflects it
+        try:
+            write_dashboard_state(cs, movers, window_status)
+        except Exception as e:
+            console.print(f"[red]Dashboard state write failed: {e}[/red]")
 
         # One-time morning brief on the first scan that has movers (and Discord is gated open)
         if alert and not morning_brief_sent and movers and (within_window or ignore_window):
@@ -295,6 +302,29 @@ def ping_cmd():
     """Test the Discord webhook."""
     ok = send_text("✅ Premarket scanner ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
+
+
+@cli.command("dashboard")
+@click.option("--port", type=int, default=None, help="Port (default: DASHBOARD_PORT in .env)")
+def dashboard_cmd(port):
+    """Run the browser dashboard server (open http://localhost:PORT/ in any browser)."""
+    from .dashboard.server import serve
+    serve(port=port)
+
+
+@cli.command("dashboard-app")
+@click.option("--always-on-top/--no-always-on-top", default=True,
+              help="Pin the window above other apps (default on)")
+@click.option("--port", type=int, default=None, help="Port (default: DASHBOARD_PORT)")
+def dashboard_app_cmd(always_on_top, port):
+    """Launch the dashboard as a native desktop window (PyWebView).
+
+    Resizable, optional always-on-top, no browser chrome. Same data as the
+    browser dashboard. The scanner must be running in a separate window for
+    state to update.
+    """
+    from .dashboard.desktop import launch
+    launch(always_on_top=always_on_top, port=port)
 
 
 @cli.command("daily-review")
