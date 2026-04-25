@@ -18,7 +18,8 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_candidates, send_text
+from .alerts.discord import send_candidates, send_text, send_updates
+from .alerts.state import AlertTracker
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.stats import compute_stats, overall_stats
@@ -62,7 +63,7 @@ def cli() -> None:
 @click.option("--top", default=10, help="Max candidates to show / alert")
 def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
     """Run the premarket scanner."""
-    seen: set[str] = set()
+    tracker = AlertTracker()
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
         console.rule(f"Scan @ {ts}")
@@ -70,11 +71,25 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
         _print_candidates(cs)
 
         if alert:
-            new = [c for c in cs if c.symbol not in seen]
-            if new:
-                ok = send_candidates(new, top_n=top)
-                console.print(f"[cyan]Alert sent: {ok} ({len(new)} new)[/cyan]")
-                seen.update(c.symbol for c in new)
+            new_hits: list[Candidate] = []
+            updates: list[tuple[Candidate, str, float | None]] = []
+            for c in cs:
+                kind = tracker.classify(c)
+                if kind is None:
+                    continue
+                if kind == "new":
+                    new_hits.append(c)
+                else:
+                    updates.append((c, kind, tracker.initial_price(c.symbol)))
+                tracker.record(c)
+
+            if new_hits:
+                send_candidates(new_hits, top_n=top)
+                console.print(f"[cyan]New alert: {len(new_hits)}[/cyan]")
+            if updates:
+                send_updates(updates)
+                kinds = ",".join(k for _, k, _ in updates)
+                console.print(f"[blue]Updates: {len(updates)} ({kinds})[/blue]")
 
         if loop_seconds <= 0:
             return

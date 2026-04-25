@@ -39,6 +39,11 @@ class Config:
     max_risk_per_trade_pct: float = _f("MAX_RISK_PER_TRADE_PCT", 2.0)
     max_position_size_pct: float = _f("MAX_POSITION_SIZE_PCT", 25.0)
 
+    # Re-alert thresholds for tickers already alerted this session.
+    realert_price_pct: float = _f("REALERT_PRICE_PCT", 5.0)
+    realert_volume_multiple: float = _f("REALERT_VOLUME_MULTIPLE", 2.0)
+    realert_cooldown_seconds: int = _i("REALERT_COOLDOWN_SECONDS", 300)
+
     cache_dir: Path = ROOT / "data_cache"
     db_path: Path = ROOT / "journal.db"
 
