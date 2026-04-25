@@ -5,23 +5,49 @@ A Python toolkit for IBKR AU traders running premarket-into-the-open small cap l
 ## Strategy fit
 
 - **Sessions:** premarket (4am ET) → 10am ET only
-- **Side:** longs only
+- **Sides:** LONG and SHORT lanes (each can be toggled in `.env`)
 - **Universe:** US listed, price $3–$20, float < 30M
-- **Edge:** news catalyst momentum (FDA, partnerships, earnings beats, contracts, etc.)
+- **Edges:**
+  - LONG — news catalyst momentum (FDA, partnerships, contracts, beats, uplistings…)
+  - SHORT — fresh dilution filings, parabolic extension fades, bearish news fades
 - **Risk caps:** 2% account risk per trade, 25% max position size
 
 ## What it does
 
 | Module | Purpose |
 |---|---|
-| `scanner` | Builds candidate universe → fetches premarket quotes → filters → ranks |
-| `data/edgar` | Real-time SEC 8-K / 424B5 / S-1 filing firehose |
-| `data/news` | Finnhub company news with catalyst keyword tagging |
+| `scanner` | Builds universe → quotes → filters → splits LONG / SHORT lanes → ranks |
+| `data/edgar` | Real-time SEC 8-K / 424B5 / S-1 firehose |
+| `data/prwires` | GlobeNewswire / BusinessWire / PR Newswire / Accesswire RSS |
+| `data/news` | Weighted catalyst classifier (35+ rules, signed bullish/bearish scores) |
+| `data/finviz` | Top gainers + losers as universe expansion |
 | `data/float_data` | Cached float lookup (yfinance, 7d TTL) |
-| `alerts/discord` | Posts top candidates to your Discord webhook |
-| `journal` | SQLite-backed trade log |
+| `data/levels` | Per-candidate entry / SL / TP zones, pivots, VWAP, S/R |
+| `alerts/discord` | Side-aware embeds: LONG green / SHORT red / updates blue |
+| `alerts/state` | Per-(symbol, side) re-alerter for movers, vol surges, new filings |
+| `journal` | SQLite trade log |
 | `journal/stats` | Per-setup expectancy in R-multiples |
 | `sizing` | Risk-based + quarter-Kelly position sizer |
+
+## Long vs Short lanes
+
+Each scan emits candidates tagged `LONG` or `SHORT`. Discord embeds are color-coded; the title prefixes the side. **A single ticker can produce both** if conditions flip during the session (e.g. gapped on FDA news, then priced an offering 30 minutes later).
+
+LONG lane qualifiers (any one):
+- Gap ≥ 10% AND bullish news score ≥ `LONG_MIN_BULLISH_SCORE` (default 10) AND no dilution
+- Gap ≥ 20% AND rvol ≥ 5x (pure technical breakout, no news required)
+
+SHORT lane qualifiers (any one):
+- Gap ≥ 15% AND fresh dilution filing (424B5/S-1/S-3/ATM/convertible)
+- Gap ≥ 20% AND bearish news score ≥ `SHORT_MIN_BEARISH_SCORE` (default 15)
+- Gap ≥ `SHORT_PARABOLIC_EXTENSION_PCT` (default 60%) — pure parabolic fade
+
+Each candidate gets a `Trade plan` block in the alert:
+- Entry zone (long: PMH break / short: rejection band below PMH)
+- Stop (long: max(VWAP, recent low) / short: above PMH)
+- TP1 / TP2 with R:R against entry midpoint, snapped to real levels (PDH, R1/R2, S1/S2, round numbers, VWAP, PDC)
+
+To run longs only while you build short stats: set `ENABLE_SHORT_LANE=false` in `.env`.
 
 ## Setup
 
@@ -89,14 +115,20 @@ This is the whole point of the journal. Setups with `ExpR > 0.3` and `n >= 30` a
 
 ## Suggested setup tags
 
-Keep these consistent so stats don't fragment:
+Keep these consistent so stats don't fragment.
 
+**Long setups:**
 - `gap_and_go` — gap >10%, hold above PM high, momentum continuation
 - `first_green_day` — multi-day downtrend reverses on volume
 - `breakout` — break of premarket / overnight / multi-day high
 - `news_runner` — fresh catalyst, no prior premarket move
 - `vwap_reclaim` — loss + reclaim of VWAP into the open
-- `dilution_fade_long` — only if you trade these (usually a short setup)
+
+**Short setups (when you start trading them):**
+- `dilution_short` — fresh 424B5/ATM filing on a runner
+- `parabolic_fade` — extended >60% gap, no fresh news
+- `news_fade` — earnings miss / FDA reject / clinical hold gappers
+- `failed_breakout` — PMH break that reclaimed below VWAP
 
 ## Risk notes
 

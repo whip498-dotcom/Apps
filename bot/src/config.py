@@ -35,6 +35,18 @@ class Config:
     min_premarket_volume: int = _i("SCAN_MIN_PREMARKET_VOLUME", 50_000)
     min_relative_volume: float = _f("SCAN_MIN_RELATIVE_VOLUME", 2.0)
 
+    # Lane controls
+    enable_long_lane: bool = os.getenv("ENABLE_LONG_LANE", "true").lower() == "true"
+    enable_short_lane: bool = os.getenv("ENABLE_SHORT_LANE", "true").lower() == "true"
+
+    # Long lane requires either bullish news score or no bearish news
+    long_min_bullish_score: float = _f("LONG_MIN_BULLISH_SCORE", 10.0)
+
+    # Short lane filters
+    short_min_gap_pct: float = _f("SHORT_MIN_GAP_PCT", 30.0)            # only fade big gappers
+    short_min_bearish_score: float = _f("SHORT_MIN_BEARISH_SCORE", 15.0) # OR has dilution/bad news
+    short_parabolic_extension_pct: float = _f("SHORT_PARABOLIC_EXTENSION_PCT", 60.0)
+
     account_equity: float = _f("ACCOUNT_EQUITY", 800.0)
     max_risk_per_trade_pct: float = _f("MAX_RISK_PER_TRADE_PCT", 2.0)
     max_position_size_pct: float = _f("MAX_POSITION_SIZE_PCT", 25.0)

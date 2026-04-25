@@ -1,24 +1,25 @@
-"""Candidate ticker universe for premarket scanning.
+"""Candidate ticker universe.
 
-We combine three signals to find symbols worth fetching quotes for:
+Sources (all free):
+  1. User-edited watchlist.txt
+  2. SEC EDGAR live filings (8-K / 424B5 / S-1 / etc)
+  3. Finnhub general market news related-tickers
+  4. PR wires (GlobeNewswire / BusinessWire / PR Newswire / Accesswire)
+  5. Finviz top gainers + top losers (small-cap movers)
 
-  1. Symbols mentioned in recent SEC EDGAR filings (catalyst-rich)
-  2. Symbols mentioned in recent Finnhub general market news
-  3. A persisted watchlist the user can edit (`watchlist.txt`)
-
-This avoids paying for a full small-cap universe scanner while still
-surfacing the names that actually move premarket.
+The set is filtered to plausible US small caps (1-5 alpha chars).
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Iterable
 
 import finnhub
 
 from ..config import CONFIG
 from .edgar import fetch_recent_filings, filings_by_ticker
+from .finviz import fetch_gainers, fetch_losers
+from .prwires import fetch_pr_items, pr_items_by_symbol
 
 WATCHLIST = CONFIG.cache_dir.parent / "watchlist.txt"
 
@@ -60,15 +61,23 @@ def _from_finnhub_market_news(hours: int = 12) -> set[str]:
 
 
 def _from_edgar() -> set[str]:
-    filings = fetch_recent_filings()
-    return set(filings_by_ticker(filings).keys())
+    return set(filings_by_ticker(fetch_recent_filings()).keys())
+
+
+def _from_pr_wires() -> set[str]:
+    return set(pr_items_by_symbol(fetch_pr_items(hours=12)).keys())
+
+
+def _from_finviz() -> set[str]:
+    return set(fetch_gainers()) | set(fetch_losers())
 
 
 def build_universe(extra: Iterable[str] = ()) -> list[str]:
-    syms = set()
+    syms: set[str] = set()
     syms.update(_read_watchlist())
     syms.update(_from_edgar())
     syms.update(_from_finnhub_market_news())
+    syms.update(_from_pr_wires())
+    syms.update(_from_finviz())
     syms.update(s.upper() for s in extra)
-    # Filter out obvious indices/ETFs by length heuristic — small caps are 3-5 char
     return sorted(s for s in syms if 1 <= len(s) <= 5 and s.isalpha())

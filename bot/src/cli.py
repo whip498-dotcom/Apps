@@ -34,20 +34,31 @@ def _print_candidates(cs: list[Candidate]) -> None:
         console.print("[yellow]No candidates passed filters.[/yellow]")
         return
     table = Table(title=f"Premarket candidates ({len(cs)})")
-    for col in ("Symbol", "Price", "Gap%", "RVol", "PM Vol", "Float", "Score", "Catalyst", "Flags"):
+    for col in ("Side", "Symbol", "Setup", "Price", "Gap%", "RVol", "Float",
+                "Entry", "Stop", "TP1", "RR1", "Score", "Catalyst"):
         table.add_column(col)
     for c in cs:
-        cat = c.catalysts[0].headline[:60] if c.catalysts else ""
+        side_color = "green" if c.side == "long" else "red"
+        side_label = f"[{side_color}]{c.side.upper()}[/{side_color}]"
+        cat = c.catalysts[0].headline[:50] if c.catalysts else ""
+        if c.levels:
+            entry = f"${c.levels.entry_low:.2f}-{c.levels.entry_high:.2f}"
+            stop = f"${c.levels.stop:.2f}"
+            tp1 = f"${c.levels.target_1:.2f}"
+            rr1 = f"{c.levels.rr_target_1:.2f}"
+        else:
+            entry = stop = tp1 = rr1 = "-"
         table.add_row(
+            side_label,
             c.symbol,
+            c.setup,
             f"${c.quote.last:.2f}",
             f"{c.quote.gap_pct:+.1f}",
             f"{c.quote.relative_volume:.1f}x",
-            f"{c.quote.premarket_volume:,}",
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "?",
+            entry, stop, tp1, rr1,
             f"{c.score:.1f}",
             cat,
-            ",".join(c.flags),
         )
     console.print(table)
 
@@ -80,7 +91,7 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
                 if kind == "new":
                     new_hits.append(c)
                 else:
-                    updates.append((c, kind, tracker.initial_price(c.symbol)))
+                    updates.append((c, kind, tracker.initial_price(c)))
                 tracker.record(c)
 
             if new_hits:
