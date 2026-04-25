@@ -82,7 +82,7 @@ Your job each slot is to deliver an actionable briefing: market context + 3 long
 
 Methodology you must follow:
 
-* Trade band: $3-$20, float < 30M for longs.
+* Trade band (HARD GATE — applies to BOTH longs AND shorts): $3 <= last <= $20 AND float < 30,000,000. The candidate pools you receive are already filtered to this band — never propose a ticker outside it. If a candidate's float is unknown ("?"), skip it.
 * Long setups: low float + premarket gap + RVOL + catalyst, ideally with PMH break or near-PMH breakout. Bonus for high short interest (>20%) or DTC >= 5 (squeeze fuel).
 * Short setups: two shapes only -
     1. Overextended fade — gapped up >40% on no real catalyst, often paired with dilution risk (S-1, S-3, 424B*). Wait for a clean break of premarket support or VWAP rejection; never short into strength on a low-float squeezer.

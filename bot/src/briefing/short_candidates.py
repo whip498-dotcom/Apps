@@ -65,15 +65,19 @@ def gather_shorts(max_results: int = 10) -> list[ShortCandidate]:
         ok, shape = _qualifies(q)
         if not ok:
             continue
+        # Float gate: same band as longs — $3-$20 (already checked above) AND
+        # float strictly < CONFIG.max_float (default 30M). Unknown float is
+        # treated as fail, matching scanner._passes_float for longs so the
+        # briefing's universe is consistent on both sides.
         fs = get_float(q.symbol)
+        if fs is None or fs >= CONFIG.max_float:
+            continue
         si = get_short_interest(q.symbol)
         flags: list[str] = []
         if shape == "overextended":
             flags.append("FADE_SETUP")
         if shape == "breakdown":
             flags.append("BREAKDOWN")
-        if fs is not None and fs < 30_000_000:
-            flags.append("LOW_FLOAT")
         if si and si.short_pct_float is not None and si.short_pct_float >= 0.20:
             # High SI fades are dangerous — flag them so Claude can avoid
             flags.append("HIGH_SI_RISK")
