@@ -18,7 +18,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_daily_review, send_scan, send_text
+from .alerts.discord import send_daily_review, send_scan, send_text, update_live_tile
 from .alerts.state import AlertTracker, in_trading_window
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
@@ -111,6 +111,10 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
         # Update session top pick — leader stays put unless beaten by 5%+
         new_leader, prev = tracker.update_session_top(cs)
         _print_candidates(cs)
+
+        # Always refresh the live status tile (silent edit, no notification ping)
+        window_status = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
+        update_live_tile(cs, window_status=window_status)
 
         if alert and cs and (within_window or ignore_window):
             items: list[tuple[Candidate, str, float | None]] = []

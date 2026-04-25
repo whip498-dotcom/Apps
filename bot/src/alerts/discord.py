@@ -1,15 +1,23 @@
-"""Discord webhook alerter.
+"""Discord webhook alerter — two channels, one webhook URL.
 
-One scan cycle = one consolidated message (or batched if >10 candidates).
-Each candidate has its own embed with side, conviction tier, trade plan,
-levels, catalyst, filing, flags. Charts attach inline via attachment://.
+(1) **Notifications** (`send_scan`): new messages in the channel that
+    trigger Discord pings/sounds. Fired only for actionable events:
+      - First time a HIGH-conviction candidate appears
+      - TOP PICK change
+      - Re-alerts (price move ≥ N%, ORB break, new filing, vol surge)
+    These are batched into one consolidated message per scan cycle, with
+    embeds + chart screenshots, sorted with TOP PICK at the top.
+
+(2) **Live status tile** (`update_live_tile`): a single persistent
+    message edited in-place every scan. Always-current snapshot of the
+    current TOP PICK and the ranked candidate list. Edits do **not**
+    trigger notification sounds — they update silently in the background.
+    Pin the message in Discord and it becomes a live dashboard.
 
 Conviction tiers:
   HIGH   → 🥇 (top pick) or 🟢/🔴 with conviction badge, posted by default
   MEDIUM → posted only if DISCORD_MIN_CONVICTION=medium
-  LOW    → never posted to Discord, visible in CLI only
-
-A single "TOP PICK" is highlighted at the top of every message.
+  LOW    → never posted to Discord, visible in CLI / live tile only
 """
 from __future__ import annotations
 
@@ -306,6 +314,138 @@ def send_text(message: str) -> bool:
     if not CONFIG.discord_webhook:
         return False
     return _post_with_files({"content": message}, [])
+
+
+# ============================================================================
+# Live status tile — single message, edited in place each scan
+# ============================================================================
+
+LIVE_TILE_STATE = CONFIG.cache_dir / "live_tile_state.json"
+
+
+def _read_live_msg_id() -> Optional[str]:
+    if not LIVE_TILE_STATE.exists():
+        return None
+    try:
+        return json.loads(LIVE_TILE_STATE.read_text()).get("message_id")
+    except json.JSONDecodeError:
+        return None
+
+
+def _write_live_msg_id(msg_id: str) -> None:
+    LIVE_TILE_STATE.write_text(json.dumps({"message_id": msg_id}))
+
+
+def _live_top_pick_embed(top: Candidate) -> dict:
+    color = TOP_PICK_GOLD
+    fields = [
+        {"name": "Side", "value": "🟢 LONG" if top.side == "long" else "🔴 SHORT", "inline": True},
+        {"name": "Setup", "value": top.setup or "-", "inline": True},
+        {"name": "Score", "value": f"{top.score:.1f}", "inline": True},
+        {"name": "Price", "value": f"${top.quote.last:.2f}", "inline": True},
+        {"name": "Gap", "value": f"{top.quote.gap_pct:+.1f}%", "inline": True},
+        {"name": "RVol", "value": f"{top.quote.relative_volume:.1f}x", "inline": True},
+    ]
+    plan = _trade_plan_field(top)
+    if plan:
+        fields.append(plan)
+    if top.conviction_reasons:
+        fields.append({
+            "name": f"Why {top.conviction.upper()}",
+            "value": "• " + "\n• ".join(top.conviction_reasons[:5]),
+            "inline": False,
+        })
+    return {
+        "title": f"🥇 TOP PICK — ${top.symbol}",
+        "color": color,
+        "fields": fields,
+    }
+
+
+def _live_ranked_table_embed(cs: list[Candidate]) -> dict:
+    rows = ["`Rank · Side · Conv · $Sym  · Score · Setup`"]
+    for i, c in enumerate(cs[:10], start=1):
+        side = "L" if c.side == "long" else "S"
+        conv = {"high": "H", "medium": "M", "low": "L"}.get(c.conviction, "?")
+        marker = "🥇" if c.is_top_pick else "  "
+        rows.append(f"`{i:>2}` {marker} {side} {conv} `${c.symbol:<5}` `{c.score:>5.1f}` `{c.setup}`")
+    return {
+        "title": "📋 Ranked candidates",
+        "color": 0x34495E,
+        "description": "\n".join(rows),
+    }
+
+
+def update_live_tile(candidates: list[Candidate], window_status: str = "") -> bool:
+    """Post or edit the persistent live status tile.
+
+    Edits do NOT trigger notification sounds in Discord — they're meant
+    as a silent always-on dashboard. Pin the message to keep it visible.
+    """
+    if not CONFIG.discord_webhook or not CONFIG.enable_live_tile:
+        return False
+
+    from datetime import datetime
+    import pytz
+    NY = pytz.timezone("America/New_York")
+    now_ny = datetime.now(NY).strftime("%H:%M:%S NY")
+
+    embeds: list[dict] = []
+    if candidates:
+        top = next((c for c in candidates if c.is_top_pick), candidates[0])
+        embeds.append(_live_top_pick_embed(top))
+        embeds.append(_live_ranked_table_embed(candidates))
+    else:
+        embeds.append({
+            "title": "Premarket scanner — no qualifying candidates yet",
+            "color": GRAY,
+            "description": "Scanner is running. Tile updates each cycle.",
+        })
+
+    content = f"📊 **Live Status — last update {now_ny}**"
+    if window_status:
+        content += f"  ·  {window_status}"
+
+    payload = {
+        "username": "Premarket Live",
+        "content": content,
+        "embeds": embeds,
+    }
+
+    msg_id = _read_live_msg_id()
+    if msg_id:
+        url = f"{CONFIG.discord_webhook}/messages/{msg_id}"
+        try:
+            r = requests.patch(
+                url,
+                data=json.dumps(payload),
+                headers={"Content-Type": "application/json"},
+                timeout=10,
+            )
+            if r.status_code in (200, 204):
+                return True
+            # 404 means the user deleted it; create a fresh one
+        except Exception:
+            return False
+
+    try:
+        r = requests.post(
+            CONFIG.discord_webhook + "?wait=true",
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"},
+            timeout=10,
+        )
+        if r.status_code in (200, 204):
+            try:
+                data = r.json()
+                if "id" in data:
+                    _write_live_msg_id(data["id"])
+            except (ValueError, KeyError):
+                pass
+            return True
+    except Exception:
+        return False
+    return False
 
 
 def send_daily_review(summary: dict) -> bool:

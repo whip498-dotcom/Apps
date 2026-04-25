@@ -56,9 +56,16 @@ class Config:
     consecutive_loss_cooldown_minutes: int = _i("CONSECUTIVE_LOSS_COOLDOWN_MINUTES", 30)
 
     # Trading window in NY local time (HH:MM, 24-hour). Outside this window
-    # the scanner can still tick (to keep state warm) but no Discord alerts.
-    trading_window_start: str = os.getenv("TRADING_WINDOW_START", "06:30")
+    # the scanner still ticks (and updates the live tile if enabled) but
+    # new-message Discord notifications are suppressed.
+    trading_window_start: str = os.getenv("TRADING_WINDOW_START", "04:00")
     trading_window_end: str = os.getenv("TRADING_WINDOW_END", "10:00")
+
+    # Live status tile — single persistent Discord message edited in-place
+    # each scan. Always-current snapshot of TOP PICK + ranked candidates.
+    # Doesn't trigger notification sounds. New-message alerts still fire
+    # for actionable events (new HIGH conviction, TOP PICK change, ORB).
+    enable_live_tile: bool = os.getenv("ENABLE_LIVE_TILE", "true").lower() == "true"
 
     # Session top-pick: % delta a new candidate must beat by to dethrone the
     # current session leader. Prevents gold marker flicking around.
