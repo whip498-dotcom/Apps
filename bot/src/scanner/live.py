@@ -1,9 +1,18 @@
-"""EdgeHawk live ranking view.
+"""EdgeHawk — SQUEEZE ALERT live view (long bias).
 
-Rich Live in-terminal dashboard that re-runs the squeeze scanner on a
-timer and renders an in-place ranked board. Designed for the 24/7
-window during a US session when Paul wants the conviction stack at a
-glance without scrolling through a log of one-shot scans.
+This is the dedicated squeeze-section UI, modelled on Bullish Bob's
+"Squeeze Potential / Key Levels" desk. It is intentionally LONG-ONLY:
+every row in the ranking is a long candidate (gap up + RVOL + low
+float + short-interest fuel + bullish key/leg/MTF context).
+
+EdgeHawk's wider scanner methodology (longs, shorts, etc.) is
+unchanged — this view just selects the long-side squeeze setups
+that already pass the scanner's filters and presents them with
+the squeeze-trader fields a discretionary trader actually uses:
+
+  Key levels  : PMH, PML, PDH, PDL, ORH
+  Leg levels  : L1 / L2 pullback pivots (stop reference)
+  MTF         : 1m / 5m / 15m trend lights (long alignment)
 
 Usage:
     python -m src.cli watch                # 30s refresh, top 15
@@ -27,10 +36,11 @@ from ..scanner.scanner import Candidate, alert_worthy, scan
 
 _BAR_FULL = "█"
 _BAR_EMPTY = "░"
+_DOT_ON = "●"
+_DOT_OFF = "○"
 
 
 def _conviction_bar(confidence: int, width: int = 10) -> Text:
-    """A 10-cell bar coloured to confidence tier."""
     confidence = max(0, min(10, confidence))
     if confidence >= 9:
         style = "bold green"
@@ -68,6 +78,45 @@ def _trigger_text(c: Candidate) -> Text:
     return Text("—", style="dim")
 
 
+def _mtf_text(c: Candidate) -> Text:
+    """3-dot MTF light: 1m · 5m · 15m. Filled = bullish (long-aligned)."""
+    lv = c.quote.levels
+    out = Text()
+    for tf, bull in (("1", lv.mtf_1m_bull), ("5", lv.mtf_5m_bull), ("15", lv.mtf_15m_bull)):
+        if bull is True:
+            out.append(_DOT_ON, style="bold green")
+        elif bull is False:
+            out.append(_DOT_OFF, style="dim red")
+        else:
+            out.append(_DOT_OFF, style="dim")
+    align = lv.mtf_alignment
+    if align >= 3:
+        suffix_style = "bold green"
+    elif align == 2:
+        suffix_style = "yellow"
+    else:
+        suffix_style = "dim"
+    out.append(f" {align}/3", style=suffix_style)
+    return out
+
+
+def _legs_text(c: Candidate) -> Text:
+    """Leg pullback pivots — stop reference for momentum longs."""
+    lv = c.quote.levels
+    if lv.leg1_low is None and lv.leg2_low is None:
+        return Text("—", style="dim")
+    out = Text()
+    if lv.leg1_low is not None:
+        out.append("L1 ", style="bold")
+        out.append(f"${lv.leg1_low:.2f}", style="cyan")
+    if lv.leg2_low is not None:
+        if lv.leg1_low is not None:
+            out.append(" / ", style="dim")
+        out.append("L2 ", style="dim bold")
+        out.append(f"${lv.leg2_low:.2f}", style="dim cyan")
+    return out
+
+
 def _flags_text(flags: list[str]) -> Text:
     if not flags:
         return Text("—", style="dim")
@@ -93,10 +142,23 @@ def _flags_text(flags: list[str]) -> Text:
     return out
 
 
+def _long_only(candidates: list[Candidate]) -> list[Candidate]:
+    """Long-bias filter for the squeeze-alert view.
+
+    EdgeHawk's broader methodology may handle shorts elsewhere — this
+    view is intentionally one-directional, mirroring Bullish Bob's
+    squeeze-potential desk. Belt-and-braces guard since the scanner
+    already requires a positive gap.
+    """
+    return [c for c in candidates if c.quote.gap_pct > 0]
+
+
 def _ranking_table(candidates: list[Candidate], top: int, prev_top: set[str]) -> Table:
     table = Table(
-        title="EdgeHawk — live conviction ranking",
-        title_style="bold cyan",
+        title="SQUEEZE ALERT — LONG BIAS · key levels · leg levels · MTF",
+        title_style="bold magenta",
+        caption="Bullish-Bob squeeze model · longs only · EdgeHawk wider scanner unchanged",
+        caption_style="dim",
         header_style="bold",
         expand=True,
     )
@@ -110,13 +172,15 @@ def _ranking_table(candidates: list[Candidate], top: int, prev_top: set[str]) ->
     table.add_column("Float", justify="right")
     table.add_column("SI%", justify="right")
     table.add_column("DTC", justify="right")
+    table.add_column("MTF", justify="center")
     table.add_column("PMH", justify="right")
     table.add_column("PDH", justify="right")
+    table.add_column("Legs (stop ref)")
     table.add_column("Trigger")
     table.add_column("Flags")
 
     if not candidates:
-        table.add_row(*["—"] * 14)
+        table.add_row(*["—"] * 16)
         return table
 
     for rank, c in enumerate(candidates[:top], start=1):
@@ -139,8 +203,10 @@ def _ranking_table(candidates: list[Candidate], top: int, prev_top: set[str]) ->
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "—",
             si_pct,
             dtc,
+            _mtf_text(c),
             pmh,
             pdh,
+            _legs_text(c),
             _trigger_text(c),
             _flags_text(c.flags),
         )
@@ -153,12 +219,13 @@ def _header_panel(candidates: list[Candidate], scan_secs: float, interval: int,
     alert_eligible = sum(1 for c in candidates if alert_worthy(c))
     keys = finnhub_pool.key_count()
     line1 = Text.assemble(
-        ("EDGEHAWK ", "bold cyan"),
+        ("EDGEHAWK · SQUEEZE ALERT ", "bold magenta"),
+        ("(long bias) ", "bold cyan"),
         ("· ", "dim"),
         (f"scan #{iteration} ", "white"),
         (f"@ {now} ", "dim"),
         ("· ", "dim"),
-        (f"{len(candidates)} candidates ", "white"),
+        (f"{len(candidates)} longs ", "white"),
         ("· ", "dim"),
         (f"{alert_eligible} ≥ conf {CONFIG.min_confidence} ", "bold yellow"),
         ("· ", "dim"),
@@ -178,7 +245,7 @@ def _header_panel(candidates: list[Candidate], scan_secs: float, interval: int,
         ("· ", "dim"),
         (f"finnhub keys: {keys}", "white" if keys else "red"),
     )
-    return Panel(Group(line1, line2), border_style="cyan")
+    return Panel(Group(line1, line2), border_style="magenta")
 
 
 def watch(interval: int, top: int, console: Console) -> None:
@@ -192,7 +259,7 @@ def watch(interval: int, top: int, console: Console) -> None:
             iteration += 1
             t0 = time.monotonic()
             try:
-                candidates = scan()
+                candidates = _long_only(scan())
             except KeyboardInterrupt:
                 raise
             except Exception as e:
