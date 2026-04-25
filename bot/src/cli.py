@@ -19,12 +19,13 @@ from rich.console import Console
 from rich.table import Table
 
 from .alerts.discord import send_daily_review, send_scan, send_text
-from .alerts.state import AlertTracker
+from .alerts.state import AlertTracker, in_trading_window
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.review import build_summary
 from .journal.stats import compute_stats, overall_stats
 from .scanner.scanner import Candidate, scan, scan_summary
+from .scheduler import Scheduler
 from .sizing.sizing import size_trade
 
 console = Console()
@@ -77,38 +78,76 @@ def cli() -> None:
 @click.option("--charts/--no-charts", default=True, help="Attach chart screenshots to Discord alerts")
 @click.option("--min-conviction", type=click.Choice(["high", "medium", "low"]),
               default=None, help="Override DISCORD_MIN_CONVICTION for this run")
-def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool, min_conviction: str | None) -> None:
+@click.option("--ignore-window/--respect-window", default=False,
+              help="Send Discord alerts even outside the trading window")
+@click.option("--auto/--no-auto", default=True,
+              help="Run scheduled tasks (IBKR import, daily review, backtest) inside the loop")
+def scan_cmd(loop_seconds: int, alert: bool, top: int, charts: bool,
+             min_conviction: str | None, ignore_window: bool, auto: bool) -> None:
     """Run the premarket scanner. One consolidated Discord message per cycle.
 
     Default: only HIGH-conviction candidates are sent to Discord.
-    The CLI table always shows everything for transparency.
+    Discord alerts are gated to TRADING_WINDOW_START–TRADING_WINDOW_END (NY).
+    Outside that window the scanner still ticks (to keep state warm) but stays silent.
     """
     if min_conviction:
-        # Mutate the global config copy for this process
         object.__setattr__(CONFIG, "discord_min_conviction", min_conviction)
+
     tracker = AlertTracker()
+    scheduler = Scheduler(log=lambda s: console.print(f"[magenta]{s}[/magenta]")) if auto else None
+
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
-        console.rule(f"Scan @ {ts}  ·  Discord min={CONFIG.discord_min_conviction.upper()}")
+        within_window = in_trading_window()
+        window_tag = "🟢 IN-WINDOW" if within_window else "🔘 OFF-WINDOW"
+        console.rule(
+            f"Scan @ {ts}  ·  {window_tag}  ·  "
+            f"Discord min={CONFIG.discord_min_conviction.upper()}  ·  "
+            f"window {CONFIG.trading_window_start}–{CONFIG.trading_window_end} NY"
+        )
+
         cs = scan()[:top]
+
+        # Update session top pick — leader stays put unless beaten by 5%+
+        new_leader, prev = tracker.update_session_top(cs)
         _print_candidates(cs)
 
-        if alert and cs:
+        if alert and cs and (within_window or ignore_window):
             items: list[tuple[Candidate, str, float | None]] = []
             for c in cs:
                 kind = tracker.classify(c)
+                # Force a 'top_pick_new' alert when leadership changes
+                if c is new_leader and kind in (None, "new"):
+                    kind = "top_pick_new"
                 if kind is None:
                     continue
                 ip = tracker.initial_price(c)
                 items.append((c, kind, ip))
                 tracker.record(c)
+
+            if new_leader and prev:
+                console.print(
+                    f"[bold yellow]🥇 NEW TOP PICK: ${new_leader.symbol} "
+                    f"(was ${prev[0]} score {prev[2]:.1f} → ${new_leader.score:.1f})[/bold yellow]"
+                )
+
             if items:
                 ok = send_scan(items, attach_charts=charts)
                 eligible = [it for it in items if it[0].conviction == "high"]
                 console.print(
                     f"[cyan]Discord: {ok} · {len(eligible)} HIGH conviction sent · "
-                    f"{len(items)} total candidates evaluated[/cyan]"
+                    f"{len(items)} total events evaluated[/cyan]"
                 )
+        elif alert and cs and not within_window:
+            console.print("[yellow]Outside trading window — Discord silenced (state still tracked).[/yellow]")
+
+        # Auto-run scheduled tasks (IBKR import / daily review / backtest)
+        if scheduler is not None:
+            report = scheduler.tick()
+            if report.ran:
+                console.print(f"[magenta]Scheduler ran: {report.ran}[/magenta]")
+            if report.errors:
+                console.print(f"[red]Scheduler errors: {report.errors}[/red]")
 
         if loop_seconds <= 0:
             return

@@ -40,6 +40,7 @@ KIND_HEADER = {
     "vol_surge":      "Volume surge",
     "orb_break_up":   "ORB break (long)",
     "orb_break_down": "ORB break (short)",
+    "top_pick_new":   "🥇 NEW TOP PICK",
 }
 
 CONVICTION_RANK = {"high": 3, "medium": 2, "low": 1}
@@ -53,6 +54,7 @@ def _conviction_badge(c: Candidate) -> str:
 
 
 def _color(c: Candidate, kind: str) -> int:
+    if kind == "top_pick_new": return TOP_PICK_GOLD
     if c.is_top_pick: return TOP_PICK_GOLD
     if kind == "price_up" or kind == "orb_break_up": return UPDATE_BLUE
     if kind == "price_down" or kind == "orb_break_down": return UPDATE_BLUE
@@ -66,14 +68,17 @@ def _color(c: Candidate, kind: str) -> int:
 
 def _title(c: Candidate, kind: str) -> str:
     arrow = ""
-    if kind == "price_up" or kind == "orb_break_up": arrow = "↗ "
+    if kind == "top_pick_new": arrow = "🥇 "
+    elif kind == "price_up" or kind == "orb_break_up": arrow = "↗ "
     elif kind == "price_down" or kind == "orb_break_down": arrow = "↘ "
     elif kind == "new_filing": arrow = "📄 "
     elif kind == "vol_surge":  arrow = "⚡ "
     side_tag = "LONG" if c.side == "long" else "SHORT"
     setup = f" · {c.setup}" if c.setup else ""
     badge = ""
-    if c.is_top_pick:
+    if kind == "top_pick_new":
+        badge = " — NEW SESSION TOP PICK"
+    elif c.is_top_pick:
         badge = " 🥇 TOP PICK"
     elif c.conviction == "high":
         badge = " · HIGH"
@@ -272,6 +277,20 @@ def send_scan(items: list[tuple[Candidate, str, Optional[float]]],
                 "score": c.score, "conviction": c.conviction,
                 "is_top_pick": c.is_top_pick, "kind": kind,
                 "price": c.quote.last,
+                "gap_pct": c.quote.gap_pct,
+                "rvol": c.quote.relative_volume,
+                "float": c.float_shares,
+                "rotation": c.float_rotation,
+                "entry_low": c.levels.entry_low if c.levels else None,
+                "entry_high": c.levels.entry_high if c.levels else None,
+                "stop": c.levels.stop if c.levels else None,
+                "target_1": c.levels.target_1 if c.levels else None,
+                "target_2": c.levels.target_2 if c.levels else None,
+                "rr_target_1": c.levels.rr_target_1 if c.levels else None,
+                "catalyst_top_tag": (
+                    max(c.catalysts[0].matches, key=lambda m: abs(m[1]))[0]
+                    if c.catalysts and c.catalysts[0].matches else None
+                ),
             })
 
         payload = {

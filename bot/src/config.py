@@ -55,6 +55,21 @@ class Config:
     daily_loss_limit_pct: float = _f("DAILY_LOSS_LIMIT_PCT", 6.0)
     consecutive_loss_cooldown_minutes: int = _i("CONSECUTIVE_LOSS_COOLDOWN_MINUTES", 30)
 
+    # Trading window in NY local time (HH:MM, 24-hour). Outside this window
+    # the scanner can still tick (to keep state warm) but no Discord alerts.
+    trading_window_start: str = os.getenv("TRADING_WINDOW_START", "06:30")
+    trading_window_end: str = os.getenv("TRADING_WINDOW_END", "10:00")
+
+    # Session top-pick: % delta a new candidate must beat by to dethrone the
+    # current session leader. Prevents gold marker flicking around.
+    session_top_pick_delta_pct: float = _f("SESSION_TOP_PICK_DELTA_PCT", 5.0)
+
+    # Auto-scheduler intervals
+    auto_ibkr_import_minutes: int = _i("AUTO_IBKR_IMPORT_MINUTES", 10)
+    auto_daily_review_after_hhmm: str = os.getenv("AUTO_DAILY_REVIEW_AFTER", "16:30")
+    auto_backtest_weekday: int = _i("AUTO_BACKTEST_WEEKDAY", 6)  # Sunday = 6
+    auto_backtest_after_hhmm: str = os.getenv("AUTO_BACKTEST_AFTER", "18:00")
+
     # Conviction tiers — Discord only pings on HIGH by default.
     high_conviction_min_score: float = _f("HIGH_CONVICTION_MIN_SCORE", 60.0)
     medium_conviction_min_score: float = _f("MEDIUM_CONVICTION_MIN_SCORE", 35.0)
