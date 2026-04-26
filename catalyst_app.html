@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Catalyst">
 <meta name="theme-color" content="#080a0e">
+<link rel="apple-touch-icon" href="Catalyst Intelligence Platform.png">
+<link rel="icon" type="image/png" href="Catalyst Intelligence Platform.png">
 <title>Catalyst</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cabinet+Grotesk:wght@700;900&display=swap');
@@ -110,6 +112,7 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
         <div style="display:flex;align-items:center;gap:10px">
+          <img src="Catalyst Intelligence Platform.png" style="width:36px;height:36px;border-radius:8px;object-fit:cover" alt="Catalyst">
           <h1 style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px" id="header-title">Catalyst</h1>
           <span class="tag tag-green" id="header-tag">LEAN BULK</span>
         </div>
@@ -498,48 +501,127 @@ function getAudioCtx() {
   return _audioCtx;
 }
 
-// Unlock audio on very first tap anywhere — iOS Safari requires this
-document.addEventListener('touchstart', function unlockAudio() {
-  var ctx = getAudioCtx();
-  if (ctx) {
-    // Play a silent buffer to unlock
-    var buf = ctx.createBuffer(1, 1, 22050);
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.start(0);
-    ctx.resume();
+// ═══════════════════════════════════
+// AUDIO — dual approach for iOS PWA compatibility
+// Method 1: HTML5 Audio element (doesn't interrupt music)
+// Method 2: Web Audio API fallback
+// ═══════════════════════════════════
+var _beepAudio = null;
+var _audioUnlocked = false;
+
+function generateBeepWav() {
+  var sampleRate = 22050;
+  var freq = 880;
+  var beepDur = 0.2;
+  var gapDur = 0.15;
+  var totalDur = beepDur + gapDur + beepDur + 0.05;
+  var numSamples = Math.floor(sampleRate * totalDur);
+  var buffer = new ArrayBuffer(44 + numSamples * 2);
+  var view = new DataView(buffer);
+  function writeStr(offset, str) { for (var i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i)); }
+  writeStr(0,'RIFF');
+  view.setUint32(4, 36+numSamples*2, true);
+  writeStr(8,'WAVE');
+  writeStr(12,'fmt ');
+  view.setUint32(16,16,true);
+  view.setUint16(20,1,true);
+  view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*2,true);
+  view.setUint16(32,2,true);
+  view.setUint16(34,16,true);
+  writeStr(36,'data');
+  view.setUint32(40,numSamples*2,true);
+  for (var i=0;i<numSamples;i++){
+    var t=i/sampleRate;
+    var amp=0;
+    if (t<beepDur) {
+      amp=0.45*Math.sin(2*Math.PI*freq*t);
+      if (t > beepDur-0.02) amp *= (beepDur-t)/0.02;
+    } else if (t>=beepDur+gapDur && t<beepDur+gapDur+beepDur) {
+      var t2=t-(beepDur+gapDur);
+      amp=0.45*Math.sin(2*Math.PI*freq*t2);
+      if (t2 > beepDur-0.02) amp *= (beepDur-t2)/0.02;
+    }
+    view.setInt16(44+i*2, Math.max(-32768,Math.min(32767,Math.round(amp*32767))), true);
   }
-  document.removeEventListener('touchstart', unlockAudio);
-}, {once: true, passive: true});
+  var bytes = new Uint8Array(buffer);
+  var binary = '';
+  for (var i=0;i<bytes.length;i++) binary += String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,' + btoa(binary);
+}
+
+function initBeepAudio() {
+  if (_beepAudio) return;
+  try {
+    _beepAudio = new Audio(generateBeepWav());
+    _beepAudio.volume = 1.0;
+    _beepAudio.preload = 'auto';
+  } catch(e) {}
+}
+
+function unlockAudio() {
+  if (_audioUnlocked) return;
+  initBeepAudio();
+  if (_beepAudio) {
+    _beepAudio.volume = 0.01;
+    var p = _beepAudio.play();
+    if (p && p.then) {
+      p.then(function(){
+        _beepAudio.pause();
+        _beepAudio.currentTime = 0;
+        _beepAudio.volume = 1.0;
+        _audioUnlocked = true;
+      }).catch(function(){});
+    }
+  }
+  try {
+    var ctx = getAudioCtx();
+    if (ctx) {
+      var buf = ctx.createBuffer(1,1,22050);
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      ctx.resume();
+    }
+  } catch(e){}
+}
+
+document.addEventListener('touchstart', unlockAudio, {once:true, passive:true});
+document.addEventListener('click', unlockAudio, {once:true, passive:true});
 
 function playBeeps() {
+  // Method 1: HTML5 Audio (doesn't interrupt music playback)
+  initBeepAudio();
+  if (_beepAudio) {
+    try {
+      _beepAudio.currentTime = 0;
+      _beepAudio.volume = 1.0;
+      var p = _beepAudio.play();
+      if (p && p.then) p.catch(function(){});
+    } catch(e){}
+  }
+  // Method 2: Web Audio API fallback
   try {
     var ctx = getAudioCtx();
     if (!ctx) return;
-    // Resume in case suspended (iOS)
-    var doBeep = function() {
-      function beep(startTime, freq, dur) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.4, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
-        osc.start(startTime);
-        osc.stop(startTime + dur);
-      }
-      beep(ctx.currentTime,        880, 0.2);
-      beep(ctx.currentTime + 0.32, 880, 0.2);
-    };
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(doBeep);
-    } else {
-      doBeep();
+    if (ctx.state === 'suspended') ctx.resume();
+    function beep(startTime, freq, dur) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+      osc.start(startTime);
+      osc.stop(startTime + dur);
     }
-  } catch(e) {}
+    beep(ctx.currentTime, 880, 0.2);
+    beep(ctx.currentTime + 0.35, 880, 0.2);
+  } catch(e){}
 }
 
 function startRestTimer(exId, seconds) {
@@ -605,6 +687,140 @@ function updateTimerBtn(exId, secs) {
   btn.style.color = color;
   btn.style.border = '1px solid ' + color + '40';
 }
+
+// ═══════════════════════════════════
+// FULL-SCREEN REST TIMER OVERLAY
+// ═══════════════════════════════════
+var timerOverlay = null;
+var timerOverlayInterval = null;
+
+function showTimerOverlay() {
+  if (timerOverlay) return;
+  var ov = document.createElement('div');
+  ov.id = 'restTimerOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation';
+  ov.innerHTML = '<div style="font-size:9px;letter-spacing:3px;color:#3b82f6;margin-bottom:12px">REST TIMER</div>'
+    + '<div id="timerBigNum" style="font-family:Cabinet Grotesk,sans-serif;font-size:min(40vw,180px);font-weight:900;color:#fff;line-height:1;transition:color .3s"></div>'
+    + '<div id="timerExName" style="font-size:13px;color:#555;margin-top:16px;letter-spacing:1px"></div>'
+    + '<div style="margin-top:40px;display:flex;gap:16px">'
+    +   '<button id="timerOvCancel" style="padding:14px 32px;border-radius:12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;font-family:Cabinet Grotesk,sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px">CANCEL</button>'
+    + '</div>'
+    + '<div style="font-size:10px;color:#333;margin-top:24px;letter-spacing:1px">TAP ANYWHERE TO DISMISS</div>';
+  ov.onclick = function(ev) {
+    if (ev.target === ov || ev.target.tagName === 'DIV') dismissTimerOverlay();
+  };
+  document.body.appendChild(ov);
+  timerOverlay = ov;
+
+  document.getElementById('timerOvCancel').onclick = function(ev) {
+    ev.stopPropagation();
+    stopRestTimer();
+    dismissTimerOverlay();
+  };
+
+  updateTimerOverlay();
+  timerOverlayInterval = setInterval(updateTimerOverlay, 250);
+}
+
+function updateTimerOverlay() {
+  if (!timerOverlay) return;
+  var big = document.getElementById('timerBigNum');
+  var exLabel = document.getElementById('timerExName');
+  if (!big) return;
+
+  if (!restTimerRunning && restTimerSeconds <= 0 && !restTimerExId) {
+    big.textContent = 'GO!';
+    big.style.color = '#22c55e';
+    big.style.textShadow = '0 0 40px rgba(34,197,94,0.8), 0 0 80px rgba(34,197,94,0.4)';
+    if (exLabel) exLabel.textContent = 'GET BACK UNDER THE BAR';
+    if (timerOverlay) {
+      timerOverlay.style.background = 'rgba(34,197,94,0.3)';
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 200);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(34,197,94,0.3)'; }, 400);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 600);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(34,197,94,0.2)'; }, 800);
+      setTimeout(function(){ if(timerOverlay) timerOverlay.style.background = 'rgba(0,0,0,0.96)'; }, 1000);
+    }
+    big.style.animation = 'none';
+    var style = document.createElement('style');
+    style.id = 'goFlashStyle';
+    style.textContent = '@keyframes goPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.7}}';
+    if (!document.getElementById('goFlashStyle')) document.head.appendChild(style);
+    big.style.animation = 'goPulse 0.6s ease-in-out infinite';
+    setTimeout(function(){ dismissTimerOverlay(); }, 4000);
+    if (timerOverlayInterval) { clearInterval(timerOverlayInterval); timerOverlayInterval = null; }
+    return;
+  }
+
+  var secs = restTimerSeconds;
+  var mins = Math.floor(secs / 60);
+  var s = secs % 60;
+  var display = mins > 0 ? mins + ':' + (s < 10 ? '0' : '') + s : s + '';
+
+  big.textContent = display;
+  big.style.textShadow = 'none';
+  big.style.animation = 'none';
+  if (secs <= 5) {
+    big.style.color = '#ef4444';
+    big.style.fontSize = 'min(50vw,220px)';
+    if (secs <= 3 && secs >= 1) {
+      try {
+        var ctx = getAudioCtx();
+        if (ctx && ctx.state !== 'closed') {
+          if (ctx.state === 'suspended') ctx.resume();
+          var osc = ctx.createOscillator();
+          var g = ctx.createGain();
+          osc.connect(g); g.connect(ctx.destination);
+          osc.type = 'sine'; osc.frequency.value = 440;
+          g.gain.setValueAtTime(0.2, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.08);
+          osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.08);
+        }
+      } catch(e){}
+    }
+  } else if (secs <= 15) {
+    big.style.color = '#f97316';
+    big.style.fontSize = 'min(40vw,180px)';
+  } else {
+    big.style.color = '#fff';
+    big.style.fontSize = 'min(40vw,180px)';
+  }
+
+  if (exLabel && restTimerExId) {
+    var exName = '';
+    for (var di = 0; di < PROGRAM.length; di++) {
+      for (var ei = 0; ei < PROGRAM[di].exercises.length; ei++) {
+        if (PROGRAM[di].exercises[ei].id === restTimerExId) {
+          exName = PROGRAM[di].exercises[ei].name;
+          break;
+        }
+      }
+      if (exName) break;
+    }
+    exLabel.textContent = exName;
+  }
+}
+
+function dismissTimerOverlay() {
+  if (timerOverlayInterval) { clearInterval(timerOverlayInterval); timerOverlayInterval = null; }
+  if (timerOverlay) {
+    timerOverlay.parentNode.removeChild(timerOverlay);
+    timerOverlay = null;
+  }
+}
+
+// Hook into startRestTimer — show overlay when timer starts
+(function() {
+  var origStart = startRestTimer;
+  window.startRestTimer = function(exId, seconds) {
+    origStart(exId, seconds);
+    showTimerOverlay();
+  };
+  var origStop = stopRestTimer;
+  window.stopRestTimer = function() {
+    origStop();
+  };
+})();
 
 // ═══════════════════════════════════
 // TRAINING SCREEN
@@ -1604,18 +1820,23 @@ function renderNutShopping(c, block) {
       var checked = shopChecked[key]||false;
       var pill = document.createElement('div');
       pill.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;background:'+(checked?'rgba(34,197,94,0.08)':'rgba(255,255,255,0.03)')+';border:1px solid '+(checked?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.07)')+';border-radius:99px;cursor:pointer;transition:all .15s';
-      pill.innerHTML = '<div style="width:12px;height:12px;border-radius:3px;border:1.5px solid '+(checked?'#22c55e':'#444')+';background:'+(checked?'#22c55e':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(checked?'<span style="color:#000;font-size:8px;font-weight:900">✓</span>':'')+'</div>'
-        +'<span style="font-size:11px;color:'+(checked?'#22c55e':'#888')+';font-family:DM Mono,monospace;text-decoration:'+(checked?'line-through':'none')+';white-space:nowrap">'+esc(entry)+'</span>';
-      pill.onclick = function(){ shopChecked[key]=!shopChecked[key]; renderNutrition(); };
+        +'<span style="font-size:12px;color:'+(checked?'#22c55e':'#aaa')+';text-decoration:'+(checked?'line-through':'none')+'">'+esc(entry)+'</span>';
+      pill.onclick = (function(k,e){ return function(){
+        shopChecked[k] = !shopChecked[k];
+        try { localStorage.setItem('nut_shop_checked_v2', JSON.stringify(shopChecked)); } catch(x){}
+        renderNutrition();
+      };})(key, entry);
       itemsWrap.appendChild(pill);
     }
   });
   if (catDiv) c.appendChild(catDiv);
 }
 
+
+
 function renderNutBlocks(c) {
   var title = document.createElement('div');
-  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Reverse Diet Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">Reverse diet → lean bulk. Move up when weight stable 10+ days.</div>';
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Nutrition Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">Reverse diet → Maintenance → Lean bulk. Move to next block when weight is stable 10+ days.</div>';
   c.appendChild(title);
 
   NUT_BLOCKS.forEach(function(b, i) {
@@ -1627,82 +1848,61 @@ function renderNutBlocks(c) {
     var inner = document.createElement('div');
     inner.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid '+b.color+'30;border-radius:14px;padding:14px 16px;flex:1';
     inner.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-      +'<div><div style="font-family:Cabinet Grotesk,sans-serif;font-size:15px;font-weight:700">'+b.label+' — '+b.weeks+'</div>'
+      +'<div><div style="font-family:Cabinet Grotesk,sans-serif;font-size:15px;font-weight:700">'+b.label+' \u2014 '+b.weeks+'</div>'
       +'<div style="font-size:10px;color:'+b.color+';margin-top:2px;letter-spacing:1px">'+b.cal+' KCAL</div></div>'
       +'<div style="text-align:right"><div style="font-size:11px;color:#555">'+b.p+'g pro</div><div style="font-size:11px;color:#555">'+b.c+'g carbs</div></div></div>'
       +'<div style="font-size:11px;color:#666;line-height:1.8;margin-bottom:10px">'+b.note+'</div>';
     var viewBtn = document.createElement('button');
     viewBtn.style.cssText = 'padding:6px 14px;border-radius:8px;background:'+b.color+'15;border:1px solid '+b.color+'30;color:'+b.color+';font-size:10px;cursor:pointer;font-family:DM Mono,monospace;letter-spacing:1px';
-    viewBtn.textContent = 'VIEW MEALS →';
+    viewBtn.textContent = 'VIEW MEALS \u2192';
     viewBtn.onclick = function(){ nutBlock=i; nutView='plan'; renderNutrition(); };
     inner.appendChild(viewBtn);
     card.appendChild(circle);
     card.appendChild(inner);
     c.appendChild(card);
   });
-
-  var e2Note = document.createElement('div');
-  e2Note.style.cssText = 'background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin-top:6px';
-  e2Note.innerHTML = '<div style="font-size:10px;color:#ef4444;letter-spacing:2px;margin-bottom:6px;font-weight:700">⚠️ BLOODWORK FLAG</div><div style="font-size:11px;color:#888;line-height:1.8">Your E2 is elevated at 252 pmol/L (ref &lt;150). High oestradiol increases fat storage and water retention, masking lean bulk progress. Address this with an AI before Block 4 for cleaner results.</div>';
-  c.appendChild(e2Note);
 }
 
 
 
 function renderNutProtocol(c) {
   var sections = [
-    { title:'⏱ MEAL TIMING', color:'#3b82f6', items:[
-      '6:00am — Breakfast: High protein + carbs. Start MPS (muscle protein synthesis) early.',
-      '9:30am — Mid-morning: Protein bridge between meals. Never skip — keeps MPS elevated.',
-      '12:30pm — Pre-workout meal: 1.5-2hrs before gym session. Carb-heavy for fuel.',
-      'Post-gym — Shake within 30 min of session. Non-negotiable. This is your most important meal.',
-      '7:00pm — Dinner with partner: Largest meal of the day. High protein + carbs.',
-      '10:00pm — Casein shake: Slow-release protein overnight. Protects muscle during sleep.',
+    { title:'\u23f1 MEAL TIMING', color:'#3b82f6', items:[
+      '6:30am \u2014 M1 Breakfast: Protein oats. Kick-starts protein synthesis after overnight fast.',
+      '10:00am \u2014 M2 Pre-Workout: Chicken rice broccoli. Main training fuel. Eat 60-90 min before gym.',
+      '12:30pm \u2014 M3 Post-Workout: Whey banana PB shake. Fast protein + carbs for recovery.',
+      '6:00pm \u2014 M4 Dinner: Protein + rice + veg (rotates daily). Shared cook with Holly.',
+      '8:30pm \u2014 M5 Late Snack: Greek yogurt + almonds. Slow-release casein before bed.',
+      'Rest days (Sat/Sun): Swap M2+M3 for Lunch + Mid-morning shake. Same total cals.',
     ]},
-    { title:'💊 KEY SUPPLEMENTS', color:'#22c55e', items:[
-      'Whey protein — 2 scoops post-workout + 1 scoop in meals as needed.',
-      'Casein protein — 1.5 scoops before bed every night without exception.',
-      'Creatine monohydrate — 5g daily. Timing does not matter. Take it every day.',
-      'Fish oil — 3-5g EPA/DHA daily. Helps manage inflammation and your elevated E2.',
-      'Vitamin D3 + K2 — 5,000 IU daily. Supports hormone production and immune function.',
-      'Zinc + Magnesium (ZMA) — Before bed. Improves sleep quality and supports testosterone.',
+    { title:'\ud83d\udc8a KEY SUPPLEMENTS', color:'#22c55e', items:[
+      'Omega-3 fish oil \u2014 2-3g EPA+DHA daily. Priority for inflammation and lipids.',
+      'Creatine monohydrate \u2014 5g daily, any time. Take every day.',
+      'Magnesium glycinate \u2014 300-400mg before bed. Sleep and recovery.',
+      'Vitamin D3 \u2014 2,000-5,000 IU/day (test levels first).',
+      'Whey protein isolate \u2014 already in the meal plan (70g/day across meals).',
     ]},
-    { title:'💉 PROTOCOL — 140mg TEST E/WEEK', color:'#a855f7', items:[
-      'Current dose: 40mg Test E every 2 days (~140mg/week) — TRT/cruise range.',
-      'Your total testosterone is at 26.5 nmol/L — near top of reference range. Well managed.',
-      'SHBG at 20 nmol/L — low-normal, meaning more free active testosterone. Favourable.',
-      '⚠️ E2 ELEVATED: 252 pmol/L vs reference <150. This is the primary thing to address.',
-      'High E2 causes water retention, increased fat storage, and mood sensitivity.',
-      'Theoretical fix: Low-dose AI (Anastrozole 0.25mg 2x/week or Exemestane 12.5mg 2x/week).',
-      'Target E2 range: 80-130 pmol/L — do NOT crash it completely.',
-      'Consider daily injections (20mg/day) vs EOD to reduce peak-to-trough swing and aromatisation.',
-      'Get bloodwork every 8-12 weeks — non-negotiable for long-term health monitoring.',
+    { title:'\ud83d\udca7 HYDRATION', color:'#06b6d4', items:[
+      'Target 3.5-4L water daily.',
+      'Electrolytes (sodium + potassium) on training days.',
+      'Creatine pulls water into muscle \u2014 hydrate well.',
     ]},
-    { title:'💧 HYDRATION', color:'#06b6d4', items:[
-      'Minimum 4L water daily — enhanced compounds increase hydration needs.',
-      'Add electrolytes if training sessions exceed 60 minutes.',
-      'Creatine pulls water into muscle cells — extra hydration is essential.',
-      'Limit alcohol — directly impairs protein synthesis and recovery. Worse on cycle.',
+    { title:'\ud83d\udecf RECOVERY', color:'#f97316', items:[
+      '7-8 hrs sleep every night.',
+      'Walk 8,000+ steps daily (non-training days).',
+      'Screen curfew 10:30pm, lights out 11:00pm.',
     ]},
-    { title:'🛌 RECOVERY', color:'#f97316', items:[
-      '7-8 hrs sleep minimum — GH pulses occur during sleep. This is when you actually grow.',
-      'Your 6am wake-up means trading past midnight DIRECTLY cuts muscle growth.',
-      'Hard screen cut-off at 12:15am on trading nights — protect sleep above most things.',
-      'Deload every 6-8 weeks — joints and CNS need it even on cycle.',
-      'Two leg sessions per week (Mon + Thu) is the biggest single change for your physique.',
-    ]},
-    { title:'📸 WEEKLY CHECK-IN PROTOCOL', color:'#ec4899', items:[
-      'Weigh every morning — same time, post-toilet, pre-food. Average Mon-Fri for the week.',
-      'Weekly progress photo every Sunday — upload to Claude chat for body composition coaching.',
-      'Log all sets in the Training tab — progressive overload is tracked automatically.',
-      'Use the Analysis tab every Sunday to get calorie adjustment recommendations.',
-      'Current phase: Reverse diet (1,900 → 2,200 → 2,500 → 2,800 → 3,100 cal over 7 weeks).',
-      'Target lean bulk rate: 0.2kg/week. If gaining faster than 0.4kg/week, reduce 150 cal.',
+    { title:'\ud83d\udcf8 WEEKLY CHECK-IN PROTOCOL', color:'#ec4899', items:[
+      'Weigh every morning \u2014 same time, post-toilet, pre-food. Average Mon-Fri.',
+      'Weekly photo every Sunday (front, side, back \u2014 same lighting).',
+      'Log every set in the Training tab.',
+      'Block 2 \u2192 Block 3: move when weight stable 10+ days.',
+      'Block 3 \u2192 Block 4: move when training performance improves consistently.',
     ]},
   ];
 
   var title = document.createElement('div');
-  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Protocol</div><div style="font-size:11px;color:#555;margin-bottom:20px">Supplements, timing, hormones and recovery</div>';
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Protocol</div><div style="font-size:11px;color:#555;margin-bottom:20px">Supplements, timing and recovery</div>';
   c.appendChild(title);
 
   sections.forEach(function(s) {
@@ -1729,6 +1929,7 @@ function renderNutProtocol(c) {
     c.appendChild(card);
   });
 }
+
 
 // ═══════════════════════════════════
 // INIT
