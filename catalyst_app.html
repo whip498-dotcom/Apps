@@ -112,7 +112,7 @@ textarea{resize:vertical;padding:12px 14px;font-size:12px;line-height:1.7}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
         <div style="display:flex;align-items:center;gap:10px">
-          <img src="Catalyst Intelligence Platform.png" style="width:36px;height:36px;border-radius:8px;object-fit:cover" alt="Catalyst">
+          <img src="apple-touch-icon.png" style="width:36px;height:36px;border-radius:8px;object-fit:cover" alt="Catalyst">
           <h1 style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px" id="header-title">Catalyst</h1>
           <span class="tag tag-green" id="header-tag">LEAN BULK</span>
         </div>
@@ -1820,6 +1820,7 @@ function renderNutShopping(c, block) {
       var checked = shopChecked[key]||false;
       var pill = document.createElement('div');
       pill.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;background:'+(checked?'rgba(34,197,94,0.08)':'rgba(255,255,255,0.03)')+';border:1px solid '+(checked?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.07)')+';border-radius:99px;cursor:pointer;transition:all .15s';
+      pill.innerHTML = '<div style="width:12px;height:12px;border-radius:3px;border:1.5px solid '+(checked?'#22c55e':'#444')+';background:'+(checked?'#22c55e':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(checked?'<span style="color:#000;font-size:8px;font-weight:900">✓</span>':'')+'</div>'
         +'<span style="font-size:12px;color:'+(checked?'#22c55e':'#aaa')+';text-decoration:'+(checked?'line-through':'none')+'">'+esc(entry)+'</span>';
       pill.onclick = (function(k,e){ return function(){
         shopChecked[k] = !shopChecked[k];
