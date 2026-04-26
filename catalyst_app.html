@@ -1176,348 +1176,270 @@ var NUT_TYPE_COLOR = {
 };
 
 var NUT_BLOCKS = [
-  {id:1, label:'Block 1', weeks:'Weeks 1–2', cal:2200, p:195, c:235, f:68, color:'#ef4444',
-   note:'Reverse diet start from 1,900 cal. Metabolism adjusting. Hit all 5 meals consistently before worrying about exact grams. Protein stays high to protect muscle.'},
-  {id:2, label:'Block 2', weeks:'Weeks 3–4', cal:2500, p:205, c:270, f:75, color:'#f97316',
-   note:'First real step up. You should feel stronger and recovering better. Scale may tick up 0.2-0.4kg as glycogen stores refill — this is not fat.'},
-  {id:3, label:'Block 3', weeks:'Weeks 5–6', cal:2800, p:212, c:315, f:80, color:'#eab308',
-   note:'Approaching maintenance. Training performance should be noticeably better. If gaining more than 0.5kg/week, hold here an extra week before Block 4.'},
-  {id:4, label:'Block 4', weeks:'Week 7+', cal:3100, p:220, c:363, f:85, color:'#22c55e',
-   note:'Lean bulk target. 200-300 cal above maintenance. Target 0.2kg/week gain. If scale stalls 2 weeks, add 150 cal via carbs. All weights are RAW weight.'},
+  {id:2, label:'Block 2', weeks:'Current', cal:2500, p:210, c:240, f:78, color:'#f97316',
+   note:'Reverse diet step 1. All weights RAW. Macros are YOUR PLATE only. Holly gets ~75% portions from same cook. Move to Block 3 when weight stable 10+ days.'},
+  {id:3, label:'Block 3', weeks:'Next', cal:2800, p:220, c:280, f:82, color:'#eab308',
+   note:'Approaching maintenance. Carb portions increase around training. Training performance should improve noticeably. If gaining >0.5kg/week hold here.'},
+  {id:4, label:'Block 4', weeks:'Lean Bulk', cal:3100, p:230, c:320, f:85, color:'#22c55e',
+   note:'Lean bulk. Target 0.2kg/week gain. If stalled 2 weeks add 150 cal via carbs on training days only. All weights RAW.'},
 ];
 
 var NUT_PLANS = {
-1:{
-Monday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Stir-Fry',       desc:'PAUL: 225g rump steak (raw, $19.99/kg from butcher), 1/2 bok choy head, 80g capsicum, 80g mushrooms, 60g dry egg noodles, oyster sauce, soy. HOLLY: same portion BUT cook her steak well done — finish hers in pan 2-3 min extra.', cal:691, p:78, c:51, f:20, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Tuesday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Sweet Potato', desc:'PAUL: 225g rump steak (raw), 200g sweet potato wedges, 100g broccoli, 10g garlic butter. HOLLY: same — well done steak. $19.99/kg butcher rump.', cal:644, p:72, c:47, f:20, prep:'25 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Wednesday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL (Wed boost): 200g chicken breast (raw), 80g dry white rice, soy sauce. HOLLY: 150g chicken, same rice. Wed has bigger lunch to compensate for lower-protein salmon dinner.', cal:619, p:67, c:63, f:7, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Baked Salmon & Sweet Potato',desc:'PAUL: 250g salmon fillet (raw), 180g sweet potato, 100g broccolini, 1 tbsp olive oil, lemon. HOLLY: same — fine 1x/week (already only Wednesday). Omega-3s help manage your elevated E2.', cal:643, p:55, c:45, f:27, prep:'25 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Thursday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Stir-Fry',       desc:'PAUL: 225g rump steak (raw, $19.99/kg from butcher), 1/2 bok choy head, 80g capsicum, 80g mushrooms, 60g dry egg noodles, oyster sauce, soy. HOLLY: same portion BUT cook her steak well done — finish hers in pan 2-3 min extra.', cal:691, p:78, c:51, f:20, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Friday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Sweet Potato', desc:'PAUL: 225g rump steak (raw), 200g sweet potato wedges, 100g broccoli, 10g garlic butter. HOLLY: same — well done steak. $19.99/kg butcher rump.', cal:644, p:72, c:47, f:20, prep:'25 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Saturday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Tacos',          desc:'PAUL: 200g rump steak (raw), 2 flour tortillas, 60g salsa, half avocado (~40g), 50g Greek yogurt, slaw. HOLLY: same — well done steak only. Quick marinade with garlic/cumin/lime.', cal:638, p:58, c:55, f:24, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-Sunday:[
-  {type:'Breakfast',   name:'Oat & Whey Bowl',           desc:'PAUL: 60g rolled oats, 1 scoop whey, 200ml full cream milk, 1 banana. HOLLY: same minus whey scoop, add extra honey or peanut butter for cals. Both fully cooked oats.', cal:498, p:25, c:78, f:12, prep:'5 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt Bowl',         desc:'PAUL & HOLLY: 150g full-fat Greek yogurt, 80g mixed berries, 1 tsp honey, 15g almonds. Identical for both.', cal:279, p:17, c:21, f:15, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice (Lunch)',    desc:'PAUL: 150g chicken breast (raw), 80g dry white rice cooked, soy sauce drizzle. HOLLY: same — both fully cooked. Eat at 12:30pm. This is your lunch on training days.', cal:537, p:52, c:63, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'PAUL ONLY: 2 scoops whey in 300ml water + 1 banana. Within 30 min of training. Holly skips this — she is not training.', cal:359, p:51, c:32, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Roast Veg',    desc:'PAUL: 225g rump steak (raw), 200g potato roasted, 100g pumpkin, 100g green beans. HOLLY: same — well done steak. Sunday tradition done right at $19.99/kg.', cal:638, p:72, c:48, f:18, prep:'35 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',               desc:'PAUL ONLY: 1.5 scoops casein in water. Slow-release protein overnight. Holly skips — pregnancy nutrition needs are different.', cal:172, p:36, c:5, f:1, prep:'2 min'},
-],
-},
-2:{
-Monday:[
-  {type:'Breakfast',   name:'Power Oats & Eggs',        desc:'60g oats, 2 eggs + 2 whites, 1 banana, 1 tsp peanut butter, 150ml milk', cal:520, p:38, c:62, f:14, prep:'10 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'200g Greek yogurt, mixed berries, 20g granola, 1 tsp honey', cal:320, p:24, c:38, f:7, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'175g chicken breast (raw), 1.25 cups white rice, soy sauce', cal:510, p:46, c:62, f:5, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 banana', cal:380, p:50, c:36, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 280g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 165g egg noodles', cal:585, p:56, c:50, f:17, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in 200ml milk, 20g almonds', cal:310, p:37, c:14, f:12, prep:'2 min'},
-],
-Tuesday:[
-  {type:'Breakfast',   name:'Protein Pancakes',         desc:'2 scoops protein, 2 eggs, 60g oats — 4 pancakes, 2 bacon rashers, light maple syrup', cal:560, p:52, c:50, f:16, prep:'15 min'},
-  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'220g cottage cheese, 3 rice cakes, tomato', cal:290, p:32, c:24, f:5, prep:'2 min'},
-  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'160g turkey breast (raw), 120g wholegrain pasta, pesto, cherry tomatoes', cal:510, p:46, c:56, f:9, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 3 rice cakes with honey', cal:390, p:48, c:40, f:4, prep:'2 min'},
-  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 190g salmon (raw), large sweet potato, steamed broccolini. Tuesday salmon for omega-3s — important for E2 management', cal:580, p:50, c:48, f:20, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick with minimal water, 1 tbsp peanut butter', cal:310, p:38, c:10, f:12, prep:'2 min'},
-],
-Wednesday:[
-  {type:'Breakfast',   name:'Egg White Omelette & Toast', desc:'2 whole eggs + 3 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:500, p:44, c:34, f:16, prep:'10 min'},
-  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 250ml milk, 1 banana', cal:360, p:44, c:34, f:5, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'175g chicken breast (raw), 250g sweet potato mash, broccoli', cal:500, p:46, c:54, f:5, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 30g dextrose in 400ml water', cal:360, p:48, c:38, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 280g rump steak (raw), 230g sweet potato wedges, steamed broccoli, garlic butter', cal:575, p:56, c:42, f:17, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Berries',         desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:300, p:37, c:22, f:5, prep:'2 min'},
-],
-Thursday:[
-  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'70g oats, 1 scoop whey, 200ml milk, chia seeds, banana, PB', cal:530, p:38, c:66, f:12, prep:'Prep tonight'},
-  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'200g Greek yogurt, 20g almonds, 1 tsp honey', cal:290, p:24, c:20, f:14, prep:'1 min'},
-  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'185g tuna (drained), 1.25 cups white rice, soy, avocado', cal:490, p:48, c:56, f:7, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 400ml Gatorade', cal:380, p:46, c:46, f:3, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 280g rump steak (raw) sliced over 1.4 cups jasmine rice, pickled cucumber, spring onion, soy-sesame', cal:580, p:56, c:52, f:15, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 10g dark chocolate', cal:315, p:37, c:18, f:10, prep:'2 min'},
-],
-Friday:[
-  {type:'Breakfast',   name:'Protein Brekkie',          desc:'3 eggs + 2 whites, 2 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:520, p:46, c:30, f:22, prep:'12 min'},
-  {type:'Mid-Morning', name:'Protein Bar + Apple',      desc:'High protein bar 22g+ protein, 1 apple', cal:270, p:24, c:30, f:6, prep:'0 min'},
-  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'175g chicken breast (raw), large wholegrain wrap, avocado, salad', cal:510, p:48, c:50, f:10, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 banana, 1 tsp honey', cal:400, p:48, c:44, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 280g rump steak (raw) sliced thin, 4 flour tortillas, salsa, Greek yogurt, avocado, slaw, cheese', cal:600, p:56, c:44, f:18, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 2 rice cakes with peanut butter scrape', cal:290, p:36, c:18, f:10, prep:'2 min'},
-],
-Saturday:[
-  {type:'Breakfast',   name:'Big Protein Pancakes',     desc:'2.5 scoops protein, 2 eggs, 60g oats — 4 pancakes, berries, maple syrup', cal:580, p:56, c:58, f:12, prep:'15 min'},
-  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'1.5 scoops whey, frozen mango, banana, 200ml milk, 20g granola', cal:420, p:42, c:50, f:6, prep:'5 min'},
-  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'200g chicken breast (raw), 150g wholegrain pasta, pesto, cherry tomatoes, spinach', cal:560, p:52, c:54, f:14, prep:'20 min'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 30g dextrose in 400ml water', cal:360, p:48, c:38, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 280g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter. $19.99/kg', cal:630, p:58, c:36, f:22, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Choc',            desc:'1.5 scoops casein in milk, 1 square dark chocolate', cal:295, p:36, c:16, f:12, prep:'2 min'},
-],
-Sunday:[
-  {type:'Breakfast',   name:'Eggs Benedict',            desc:'3 poached eggs, 2 bacon rashers, 2 English muffins, Greek yogurt', cal:560, p:44, c:42, f:22, prep:'15 min'},
-  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:300, p:42, c:18, f:5, prep:'2 min'},
-  {type:'Lunch',       name:'Batch Chicken Bowl',       desc:'700g chicken + 3.5 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:530, p:52, c:58, f:7, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in milk, 1 banana, 1 tsp honey', cal:400, p:48, c:44, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 280g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, gravy', cal:610, p:56, c:46, f:17, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 200ml milk', cal:270, p:36, c:14, f:6, prep:'2 min'},
-],
-},
-3:{
-Monday:[
-  {type:'Breakfast',   name:'Power Oats & Eggs',        desc:'70g oats, 2 eggs + 3 whites, 1 banana, 1 tbsp peanut butter, 200ml milk', cal:580, p:42, c:68, f:15, prep:'10 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'225g Greek yogurt, blueberries, 25g granola, 1 tsp honey', cal:350, p:26, c:42, f:8, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'190g chicken breast (raw), 1.4 cups white rice, soy sauce', cal:560, p:50, c:66, f:5, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana + Dextrose', desc:'2 scoops whey in 300ml milk, 1 banana, 20g dextrose', cal:460, p:50, c:48, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 300g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 180g egg noodles, sesame oil', cal:640, p:60, c:56, f:18, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in 250ml milk, 25g almonds', cal:340, p:38, c:14, f:14, prep:'2 min'},
-],
-Tuesday:[
-  {type:'Breakfast',   name:'Protein Pancakes + Bacon', desc:'2.5 scoops protein, 2 eggs, 60g oats — 4 pancakes, 3 bacon rashers, maple syrup', cal:620, p:56, c:54, f:17, prep:'15 min'},
-  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'240g cottage cheese, 4 rice cakes, tomato, cracked pepper', cal:310, p:34, c:26, f:5, prep:'2 min'},
-  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'170g turkey breast (raw), 140g wholegrain pasta, pesto, cherry tomatoes', cal:550, p:50, c:62, f:9, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 4 rice cakes with honey', cal:430, p:50, c:46, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 195g salmon (raw), large sweet potato, steamed broccolini, lemon butter. Tuesday salmon — omega-3s critical for E2', cal:640, p:54, c:52, f:22, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick, 1 tbsp peanut butter', cal:330, p:39, c:10, f:13, prep:'2 min'},
-],
-Wednesday:[
-  {type:'Breakfast',   name:'Egg White Omelette & Toast', desc:'2 whole eggs + 4 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:540, p:48, c:38, f:17, prep:'10 min'},
-  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 300ml milk, 1 large banana', cal:380, p:44, c:36, f:6, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'190g chicken breast (raw), 275g sweet potato mash, steamed broccoli', cal:540, p:50, c:58, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 35g dextrose in 400ml water', cal:400, p:48, c:44, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 300g rump steak (raw), 260g sweet potato wedges, steamed broccolini, garlic butter', cal:630, p:60, c:46, f:18, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Berries',         desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:310, p:38, c:22, f:6, prep:'2 min'},
-],
-Thursday:[
-  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'75g oats, 1 scoop whey, 250ml milk, chia seeds, banana, PB', cal:580, p:40, c:70, f:13, prep:'Prep tonight'},
-  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'225g Greek yogurt, 22g almonds, 1 tbsp honey, cinnamon', cal:330, p:26, c:24, f:15, prep:'1 min'},
-  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'185g tuna (drained), 1.4 cups white rice, soy sauce, avocado', cal:530, p:52, c:60, f:8, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 500ml Gatorade', cal:420, p:46, c:52, f:3, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 300g rump steak (raw) sliced over 1.5 cups jasmine rice, pickled cucumber, avocado, spring onion, soy-sesame', cal:640, p:60, c:58, f:16, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 15g dark chocolate', cal:350, p:38, c:20, f:12, prep:'2 min'},
-],
-Friday:[
-  {type:'Breakfast',   name:'Full Protein Brekkie',     desc:'3 whole eggs + 2 whites, 3 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:580, p:50, c:34, f:23, prep:'12 min'},
-  {type:'Mid-Morning', name:'Protein Bar + Fruit',      desc:'High protein bar 24g+ protein, 1 apple', cal:290, p:26, c:34, f:7, prep:'0 min'},
-  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'190g chicken breast (raw), large wrap, avocado, salad, mustard', cal:540, p:50, c:54, f:11, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey + Banana',            desc:'2 scoops whey in 300ml milk, 1 large banana, 1 tbsp honey', cal:440, p:48, c:48, f:6, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 300g rump steak (raw) sliced, 4 flour tortillas, salsa, Greek yogurt, avocado, cheese, slaw', cal:660, p:60, c:48, f:20, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 3 rice cakes with peanut butter', cal:330, p:38, c:22, f:11, prep:'2 min'},
-],
-Saturday:[
-  {type:'Breakfast',   name:'Big Protein Pancake Stack',desc:'3 scoops protein, 3 eggs, 70g oats — thick stack, berries, maple syrup', cal:660, p:60, c:64, f:14, prep:'20 min'},
-  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'2 scoops whey, frozen mango, banana, 200ml milk — blended thick, granola topping', cal:490, p:46, c:56, f:7, prep:'5 min'},
-  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'230g chicken breast (raw), 180g wholegrain pasta, pesto, cherry tomatoes, spinach, parmesan', cal:640, p:56, c:62, f:15, prep:'20 min'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 35g dextrose in 400ml water', cal:400, p:48, c:44, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 300g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter', cal:700, p:62, c:42, f:24, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Choc',            desc:'1.5 scoops casein in milk, 2 squares dark chocolate 85%', cal:340, p:36, c:18, f:14, prep:'2 min'},
-],
-Sunday:[
-  {type:'Breakfast',   name:'Eggs Benedict Style',      desc:'4 poached eggs, 3 bacon rashers, 2 English muffins, Greek yogurt', cal:620, p:48, c:44, f:24, prep:'20 min'},
-  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:300, p:42, c:18, f:5, prep:'2 min'},
-  {type:'Lunch',       name:'Batch Chicken Bowl',       desc:'750g chicken + 3.75 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:560, p:54, c:62, f:7, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Protein Shake + Banana',   desc:'2 scoops whey in milk, 1 banana, 1 tbsp honey', cal:420, p:48, c:46, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 300g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, red wine jus', cal:670, p:60, c:50, f:18, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein protein, slow-digesting overnight', cal:280, p:36, c:12, f:7, prep:'2 min'},
-],
-},
-4:{
-Monday:[
-  {type:'Breakfast',   name:'Power Oats + Eggs',        desc:'80g oats, 2 eggs + 3 whites, 1 banana, 1 tbsp peanut butter, 200ml milk', cal:620, p:46, c:72, f:16, prep:'10 min'},
-  {type:'Mid-Morning', name:'Greek Yogurt & Fruit',     desc:'250g full-fat Greek yogurt, 1 cup blueberries, 30g granola, 1 tsp honey', cal:380, p:28, c:44, f:10, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Rice',           desc:'200g chicken breast (raw), 1.5 cups white rice, 1 tbsp soy sauce', cal:590, p:52, c:72, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Banana + Dextrose', desc:'2 scoops whey in 350ml milk, 1 banana, 30g dextrose', cal:480, p:52, c:52, f:6, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Stir-Fry',      desc:'2x 320g rump steak (raw), bok choy, capsicum, mushrooms, oyster sauce, 200g egg noodles, sesame oil', cal:680, p:64, c:62, f:20, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein & Almonds',         desc:'1.5 scoops casein in water, 30g almonds', cal:340, p:38, c:10, f:16, prep:'2 min'},
-],
-Tuesday:[
-  {type:'Breakfast',   name:'Protein Pancakes + Bacon', desc:'2 scoops protein, 2 eggs, 60g oats — 4 pancakes, 3 rashers bacon, maple syrup', cal:640, p:56, c:56, f:18, prep:'15 min'},
-  {type:'Mid-Morning', name:'Cottage Cheese & Rice Cakes', desc:'250g cottage cheese, 4 rice cakes, tomato, cracked pepper', cal:340, p:36, c:28, f:6, prep:'2 min'},
-  {type:'Pre-Workout', name:'Turkey & Pasta',           desc:'180g turkey breast (raw), 150g wholegrain pasta, pesto, cherry tomatoes', cal:580, p:52, c:66, f:10, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Rice Cakes',        desc:'2 scoops whey in milk, 4 rice cakes with honey', cal:460, p:50, c:50, f:5, prep:'2 min'},
-  {type:'Dinner',      name:'Baked Salmon & Sweet Potato', desc:'2x 200g salmon (raw), large sweet potato, steamed broccolini, lemon butter. Omega-3s for E2 management', cal:680, p:58, c:56, f:24, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Pudding',           desc:'1.5 scoops casein thick with minimal water, 1 tbsp peanut butter', cal:360, p:40, c:12, f:14, prep:'2 min'},
-],
-Wednesday:[
-  {type:'Breakfast',   name:'5-Egg White Omelette + Toast', desc:'2 whole eggs + 4 whites, spinach, mushrooms, feta, 2 slices sourdough', cal:580, p:52, c:40, f:18, prep:'10 min'},
-  {type:'Mid-Morning', name:'Protein Shake + Banana',   desc:'2 scoops whey in 300ml milk, 1 large banana', cal:380, p:44, c:36, f:6, prep:'2 min'},
-  {type:'Pre-Workout', name:'Chicken & Sweet Potato',   desc:'200g chicken breast (raw), 300g sweet potato mash, steamed broccoli', cal:570, p:52, c:62, f:6, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 40g dextrose in 400ml water', cal:430, p:48, c:48, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Sweet Potato',desc:'2x 320g rump steak (raw), 300g sweet potato wedges, steamed broccolini, garlic butter, cherry tomatoes', cal:680, p:64, c:52, f:20, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Fruit',           desc:'1.5 scoops casein in 200ml milk, 1 cup mixed berries', cal:340, p:38, c:24, f:6, prep:'2 min'},
-],
-Thursday:[
-  {type:'Breakfast',   name:'Overnight Oats Loaded',    desc:'80g oats, 1 scoop protein, 250ml milk, chia seeds, banana, PB — prep night before', cal:610, p:44, c:74, f:14, prep:'Prep tonight'},
-  {type:'Mid-Morning', name:'Greek Yogurt + Almonds',   desc:'250g Greek yogurt, 25g almonds, 1 tbsp honey, cinnamon', cal:370, p:28, c:28, f:16, prep:'1 min'},
-  {type:'Pre-Workout', name:'Tuna & Rice',              desc:'2x 185g tuna (drained), 1.5 cups white rice, soy sauce, avocado', cal:560, p:54, c:64, f:8, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey + Gatorade',          desc:'2 scoops whey in water, 500ml Gatorade', cal:440, p:46, c:54, f:3, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Rice Bowl',     desc:'2x 320g rump steak (raw) sliced over 1.5 cups jasmine rice, pickled cucumber, avocado, sesame, soy drizzle', cal:690, p:64, c:64, f:18, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein in 250ml milk, 20g dark chocolate', cal:380, p:38, c:22, f:14, prep:'2 min'},
-],
-Friday:[
-  {type:'Breakfast',   name:'Full Protein Brekkie',     desc:'3 whole eggs + 3 whites, 3 bacon rashers, mushrooms, tomato, 2 slices sourdough', cal:620, p:54, c:38, f:24, prep:'15 min'},
-  {type:'Mid-Morning', name:'Protein Bar + Fruit',      desc:'High-protein bar (25g+), 1 apple', cal:340, p:28, c:38, f:8, prep:'0 min'},
-  {type:'Pre-Workout', name:'Chicken Wrap',             desc:'200g chicken breast (raw), large wholegrain wrap, avocado, salad, mustard', cal:570, p:52, c:58, f:12, prep:'5 min'},
-  {type:'Post-Workout',name:'Whey Shake + Banana',      desc:'2 scoops whey in 300ml milk, 1 large banana, 1 tbsp honey', cal:460, p:48, c:50, f:6, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak Tacos',         desc:'2x 320g rump steak (raw) sliced thin, 4 flour tortillas, salsa, Greek yogurt, avocado, cheese, slaw. Best Friday feed going', cal:710, p:64, c:56, f:22, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Rice Cakes',      desc:'1.5 scoops casein, 3 rice cakes with peanut butter', cal:360, p:38, c:24, f:12, prep:'2 min'},
-],
-Saturday:[
-  {type:'Breakfast',   name:'Big Protein Pancake Stack',desc:'3 scoops protein, 3 eggs, 80g oats — thick stack, mixed berries, maple syrup', cal:700, p:62, c:70, f:16, prep:'20 min'},
-  {type:'Mid-Morning', name:'Smoothie Bowl',            desc:'2 scoops protein, frozen mango, banana, 200ml milk — blended thick, granola topping', cal:520, p:48, c:58, f:8, prep:'5 min'},
-  {type:'Lunch',       name:'Chicken Pesto Pasta',      desc:'250g chicken breast (raw), 200g wholegrain pasta, pesto, cherry tomatoes, spinach, parmesan', cal:680, p:60, c:68, f:16, prep:'20 min'},
-  {type:'Post-Workout',name:'Whey + Dextrose',          desc:'2 scoops whey, 40g dextrose in water', cal:420, p:48, c:46, f:2, prep:'2 min'},
-  {type:'Dinner',      name:'BBQ Rump Steak',           desc:'2x 320g rump steak (raw) on BBQ, large sweet potato, roasted asparagus, garlic butter. Premium rump at $19.99/kg', cal:750, p:66, c:48, f:26, prep:'20 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein + Dark Chocolate',  desc:'1.5 scoops casein in milk, 2 squares dark chocolate 85%', cal:360, p:36, c:18, f:16, prep:'2 min'},
-],
-Sunday:[
-  {type:'Breakfast',   name:'Eggs Benedict Style',      desc:'4 poached eggs, 3 bacon rashers, 2 English muffins, Greek yogurt', cal:640, p:50, c:46, f:24, prep:'20 min'},
-  {type:'Mid-Morning', name:'Batch Prep Shake',         desc:'2 scoops whey in 300ml milk while batch cooking', cal:340, p:44, c:18, f:6, prep:'2 min'},
-  {type:'Lunch',       name:'Batch Chicken Rice Bowls', desc:'800g chicken + 4 cups rice + veg — makes Mon-Wed lunches. Eat one now.', cal:580, p:56, c:64, f:8, prep:'Batch cook'},
-  {type:'Post-Workout',name:'Protein Shake + Banana',   desc:'2 scoops whey in milk, 1 banana, 1 tbsp honey', cal:440, p:48, c:48, f:6, prep:'2 min'},
-  {type:'Dinner',      name:'Rump Steak & Roast Veg',   desc:'2x 320g rump steak (raw), roasted potato, pumpkin, parsnip, steamed beans, red wine jus or gravy', cal:720, p:64, c:56, f:20, prep:'30 min', forTwo:true},
-  {type:'Late Snack',  name:'Casein Shake',             desc:'1.5 scoops casein protein, slow-digesting overnight', cal:300, p:36, c:10, f:8, prep:'2 min'},
-],
-},
+  2: {
+    'Monday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 220g chicken breast (raw), 60g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 165g chicken, 45g rice, 90g broccoli.', cal:545, p:54, c:57, f:11, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 100g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 75g banana + 11g PB.', cal:447, p:40, c:38, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 200g rump (raw), 65g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 150g rump, 49g rice, same veg.', cal:616, p:54, c:63, f:16, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Tuesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 220g chicken breast (raw), 60g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 165g chicken, 45g rice, 90g broccoli.', cal:545, p:54, c:57, f:11, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 100g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 75g banana + 11g PB.', cal:447, p:40, c:38, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 160g salmon (raw), 200g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 120g salmon, 150g sweet potato, same veg.', cal:604, p:40, c:50, f:28, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Wednesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 220g chicken breast (raw), 60g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 165g chicken, 45g rice, 90g broccoli.', cal:545, p:54, c:57, f:11, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 100g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 75g banana + 11g PB.', cal:447, p:40, c:38, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 180g chicken (raw), 70g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 135g chicken, 52g pasta, same veg, 10g cheddar.', cal:599, p:55, c:58, f:16, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Thursday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 220g chicken breast (raw), 60g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 165g chicken, 45g rice, 90g broccoli.', cal:545, p:54, c:57, f:11, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 100g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 75g banana + 11g PB.', cal:447, p:40, c:38, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 200g rump (raw), 65g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 150g rump, 49g rice, same veg.', cal:616, p:54, c:63, f:16, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Friday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 220g chicken breast (raw), 60g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 165g chicken, 45g rice, 90g broccoli.', cal:545, p:54, c:57, f:11, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 100g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 75g banana + 11g PB.', cal:447, p:40, c:38, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 160g salmon (raw), 200g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 120g salmon, 150g sweet potato, same veg.', cal:604, p:40, c:50, f:28, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Saturday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 10g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 8g PB.', cal:329, p:37, c:14, f:14, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 230g chicken (raw), 75g dry rice, 120g broccoli, 1 egg(s) (50g), 5ml olive oil. HOLLY: 172g chicken, 56g rice, 90g broccoli, 1 egg.', cal:688, p:63, c:69, f:17, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 180g chicken (raw), 70g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 135g chicken, 52g pasta, same veg, 10g cheddar.', cal:599, p:55, c:58, f:16, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+    'Sunday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 50g oats, 35g whey, 100g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 38g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:579, p:43, c:73, f:13, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 10g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 8g PB.', cal:329, p:37, c:14, f:14, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 230g chicken (raw), 75g dry rice, 120g broccoli, 1 egg(s) (50g), 5ml olive oil. HOLLY: 172g chicken, 56g rice, 90g broccoli, 1 egg.', cal:688, p:63, c:69, f:17, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 200g rump (raw), 65g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 150g rump, 49g rice, same veg.', cal:616, p:54, c:63, f:16, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 170g Greek yogurt, 15g almonds, 10g honey. HOLLY: 128g yogurt, 11g almonds, 8g honey.', cal:282, p:18, c:17, f:16, prep:'2 min', forTwo:false},
+    ],
+  },
+  3: {
+    'Monday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 240g chicken breast (raw), 85g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 180g chicken, 64g rice, 90g broccoli.', cal:658, p:60, c:77, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 130g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 98g banana + 11g PB.', cal:474, p:40, c:44, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 210g rump (raw), 90g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 158g rump, 68g rice, same veg.', cal:721, p:58, c:83, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Tuesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 240g chicken breast (raw), 85g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 180g chicken, 64g rice, 90g broccoli.', cal:658, p:60, c:77, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 130g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 98g banana + 11g PB.', cal:474, p:40, c:44, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 170g salmon (raw), 260g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 128g salmon, 195g sweet potato, same veg.', cal:677, p:43, c:62, f:29, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Wednesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 240g chicken breast (raw), 85g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 180g chicken, 64g rice, 90g broccoli.', cal:658, p:60, c:77, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 130g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 98g banana + 11g PB.', cal:474, p:40, c:44, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 200g chicken (raw), 85g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 150g chicken, 64g pasta, same veg, 10g cheddar.', cal:674, p:61, c:68, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Thursday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 240g chicken breast (raw), 85g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 180g chicken, 64g rice, 90g broccoli.', cal:658, p:60, c:77, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 130g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 98g banana + 11g PB.', cal:474, p:40, c:44, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 210g rump (raw), 90g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 158g rump, 68g rice, same veg.', cal:721, p:58, c:83, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Friday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 240g chicken breast (raw), 85g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 180g chicken, 64g rice, 90g broccoli.', cal:658, p:60, c:77, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 130g banana + 15g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 98g banana + 11g PB.', cal:474, p:40, c:44, f:16, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 170g salmon (raw), 260g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 128g salmon, 195g sweet potato, same veg.', cal:677, p:43, c:62, f:29, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Saturday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 15g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 11g PB.', cal:358, p:39, c:15, f:16, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 240g chicken (raw), 95g dry rice, 120g broccoli, 1 egg(s) (50g), 5ml olive oil. HOLLY: 180g chicken, 71g rice, 90g broccoli, 1 egg.', cal:772, p:67, c:86, f:17, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 200g chicken (raw), 85g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 150g chicken, 64g pasta, same veg, 10g cheddar.', cal:674, p:61, c:68, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+    'Sunday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 65g oats, 35g whey, 130g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 49g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:662, p:45, c:89, f:15, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 15g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 11g PB.', cal:358, p:39, c:15, f:16, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 240g chicken (raw), 95g dry rice, 120g broccoli, 1 egg(s) (50g), 5ml olive oil. HOLLY: 180g chicken, 71g rice, 90g broccoli, 1 egg.', cal:772, p:67, c:86, f:17, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 210g rump (raw), 90g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 158g rump, 68g rice, same veg.', cal:721, p:58, c:83, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 180g Greek yogurt, 20g almonds, 10g honey. HOLLY: 135g yogurt, 15g almonds, 8g honey.', cal:321, p:20, c:18, f:19, prep:'2 min', forTwo:false},
+    ],
+  },
+  4: {
+    'Monday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 250g chicken breast (raw), 100g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 188g chicken, 75g rice, 90g broccoli.', cal:723, p:63, c:89, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 150g banana + 20g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 112g banana + 15g PB.', cal:522, p:41, c:50, f:19, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 220g rump (raw), 105g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 165g rump, 79g rice, same veg.', cal:788, p:62, c:95, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Tuesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 250g chicken breast (raw), 100g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 188g chicken, 75g rice, 90g broccoli.', cal:723, p:63, c:89, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 150g banana + 20g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 112g banana + 15g PB.', cal:522, p:41, c:50, f:19, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 180g salmon (raw), 300g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 135g salmon, 225g sweet potato, same veg.', cal:731, p:46, c:70, f:31, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Wednesday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 250g chicken breast (raw), 100g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 188g chicken, 75g rice, 90g broccoli.', cal:723, p:63, c:89, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 150g banana + 20g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 112g banana + 15g PB.', cal:522, p:41, c:50, f:19, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 210g chicken (raw), 100g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 158g chicken, 75g pasta, same veg, 10g cheddar.', cal:739, p:65, c:79, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Thursday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 250g chicken breast (raw), 100g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 188g chicken, 75g rice, 90g broccoli.', cal:723, p:63, c:89, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 150g banana + 20g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 112g banana + 15g PB.', cal:522, p:41, c:50, f:19, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 220g rump (raw), 105g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 165g rump, 79g rice, same veg.', cal:788, p:62, c:95, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Friday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Pre-Workout', name:'Chicken Rice Broccoli', desc:'YOUR PLATE: 250g chicken breast (raw), 100g dry jasmine rice, 120g broccoli, 5ml olive oil. Season chicken, cook rice, steam broccoli. HOLLY: 188g chicken, 75g rice, 90g broccoli.', cal:723, p:63, c:89, f:12, prep:'15 min', forTwo:false},
+      {type:'Post-Workout', name:'Whey Banana PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 150g banana + 20g peanut butter. Blend or shake. HOLLY: 25g whey + 150ml milk + 112g banana + 15g PB.', cal:522, p:41, c:50, f:19, prep:'2 min', forTwo:false},
+      {type:'Dinner', name:'Baked Salmon & Veg', desc:'Cook 2 fillets (1 each). YOUR PLATE: 180g salmon (raw), 300g sweet potato, 100g broccolini, 120g zucchini, 5ml olive oil. HOLLY: 135g salmon, 225g sweet potato, same veg.', cal:731, p:46, c:70, f:31, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Saturday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 15g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 11g PB.', cal:358, p:39, c:15, f:16, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 250g chicken (raw), 105g dry rice, 120g broccoli, 2 egg(s) (100g), 5ml olive oil. HOLLY: 188g chicken, 79g rice, 90g broccoli, 2 egg.', cal:896, p:76, c:94, f:23, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Chicken Pasta', desc:'Cook together. YOUR PLATE: 210g chicken (raw), 100g dry penne, 60g spinach, 80g cherry tomatoes, 80g mushrooms, 5ml olive oil, 15g cheddar. HOLLY: 158g chicken, 75g pasta, same veg, 10g cheddar.', cal:739, p:65, c:79, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+    'Sunday': [
+      {type:'Breakfast', name:'Oats + Whey + Banana', desc:'YOUR PLATE: 80g oats, 35g whey, 150g banana (~1), 200ml milk, 10g honey. Mix oats+whey+milk overnight or cook. Top with banana+honey. HOLLY: 60g oats, 25g whey, same banana, 150ml milk, 10g honey.', cal:737, p:47, c:103, f:16, prep:'5 min', forTwo:false},
+      {type:'Mid-Morning', name:'Whey PB Shake', desc:'YOUR PLATE: 35g whey + 200ml milk + 15g peanut butter. Shake. HOLLY: 25g whey + 150ml milk + 11g PB.', cal:358, p:39, c:15, f:16, prep:'2 min', forTwo:false},
+      {type:'Lunch', name:'Chicken Rice Broccoli + Egg', desc:'YOUR PLATE: 250g chicken (raw), 105g dry rice, 120g broccoli, 2 egg(s) (100g), 5ml olive oil. HOLLY: 188g chicken, 79g rice, 90g broccoli, 2 egg.', cal:896, p:76, c:94, f:23, prep:'15 min', forTwo:false},
+      {type:'Dinner', name:'Steak Stir-Fry', desc:'Cook 2 steaks (1 each). YOUR PLATE: 220g rump (raw), 105g dry rice, 150g bok choy, 80g capsicum, 80g mushrooms, 5ml sesame oil, 10ml soy. HOLLY: 165g rump, 79g rice, same veg.', cal:788, p:62, c:95, f:17, prep:'20 min', forTwo:true},
+      {type:'Late Snack', name:'Greek Yogurt + Almonds', desc:'YOUR PLATE: 200g Greek yogurt, 25g almonds, 10g honey. HOLLY: 150g yogurt, 19g almonds, 8g honey.', cal:369, p:23, c:20, f:22, prep:'2 min', forTwo:false},
+    ],
+  },
 };
 
 var NUT_SHOPPING = {
-1:[
-  {cat:'🥦 FRESH PRODUCE (Aisle 1 — Entrance)',items:[
-    'Bananas × 21 (~2.5kg) — 14 breakfast + 7 post-workout (Paul)',
-    'Bok choy × 1 head — Mon stir-fry, use entire',
-    'Capsicum × 2 loose — Mon stir-fry',
-    'Mushrooms 400g pack — Mon stir-fry only',
-    'Broccoli × 2 heads — Tue + Fri dinners',
-    'Broccolini × 1 bunch — Wed salmon',
-    'Sweet potato 1 × 1.5kg bag — Tue/Wed/Fri dinners',
-    'Brushed potatoes 1.5kg bag — Sun roast (extras keep for next week)',
-    'Pumpkin piece ~200g (deli-cut by weight) — Sun roast',
-    'Green beans 250g — Sun roast',
-    'Avocado × 1 — Sat tacos',
-    'Lemon × 1 — Wed salmon',
-    '👶 Extra fruit for Holly (cravings) — your pick',
-  ]},
-  {cat:'🥖 BAKERY (Aisle 2)',items:[
-    'Sourdough 1 loaf — backup carbs option',
-  ]},
-  {cat:'🥩 MEAT & SEAFOOD (Back Wall)',items:[
-    'Chicken breast 2.2kg RSPCA approved — daily lunch (~$14.50/kg)',
-    'Salmon fillets 500g portions — Wed dinner only',
-    'Rump steak 3.0kg from your butcher @ $19.99/kg = $59.97',
-    'Premium quality — well done for Holly always',
-  ]},
-  {cat:'🧀 DAIRY (Back Wall continued)',items:[
-    'Full cream milk 3L bottle — breakfast for both',
-    'Greek yogurt 2 × 1kg tubs — mid-morning daily for both + Sat tacos',
-    'Garlic butter 100g tub — Tue/Fri dinners',
-    'Tasty cheese block 250g — Holly Wed swap (instead of feta)',
-  ]},
-  {cat:'❄️ FROZEN (Back of Store)',items:[
-    'Mixed berries frozen 1kg — daily mid-morning for both',
-  ]},
-  {cat:'🌾 PANTRY — BREAKFAST AISLE',items:[
-    'Rolled oats 1kg — daily breakfast both',
-    'Honey 500g jar — mid-morning + breakfast',
-  ]},
-  {cat:'🍝 PANTRY — RICE & PASTA',items:[
-    'Jasmine rice 1kg — daily lunch + Wed dinner',
-    'Egg noodles 200g — Mon dinner only',
-    'Flour tortillas small pack — Sat tacos',
-  ]},
-  {cat:'🥫 PANTRY — SAUCES & ASIAN',items:[
-    'Light soy sauce 250ml',
-    'Oyster sauce 250ml — Mon dinner',
-    'Salsa medium 300g — Sat tacos',
-    '(Olive oil — should already have)',
-  ]},
-  {cat:'🥜 PANTRY — HEALTH FOODS',items:[
-    'Almonds raw 250g — daily mid-morning both',
-  ]},
-  {cat:'💊 HEALTH AISLE',items:[
-    '(Creatine — already have, 5g/day)',
-    '(Fish oil — already have, 3-5g EPA/DHA daily)',
-    'Whey & casein NOT here — buy online (Bulk Nutrients / MyProtein)',
-  ]},
-  {cat:'👶 HOLLY — PREGNANCY EXTRAS',items:[
-    'Elevit prenatal multivitamin (CRITICAL — first trimester folate)',
-    'Ginger & lemon tea 1 box — first trimester nausea',
-    'Sao crackers 1 pack — morning sickness',
-    'Extra fruit (cravings) — added to produce above',
-    '⚠️ COOKING NOTES FOR HOLLY:',
-    '⚠️ Steak: well done only — finish hers in pan 2-3 min extra',
-    '⚠️ Eggs: not in fixed plan but if added, fully cooked for Holly',
-    '⚠️ Salmon: Wed only is fine — within safe weekly limit',
-    '⚠️ Holly skips Paul-only items (whey, casein, post-workout shake)',
-  ]},
-  {cat:'💰 ESTIMATED WEEKLY TOTAL',items:[
-    'Subtotal: ~$249 (Paul + Holly combined, under $270 target ✓)',
-    'Rump steak (butcher): $59.97 of total',
-    'Whey/casein (online, separate): $50-80/tub lasting 4-6 weeks',
-    'Specials at Woolworths can reduce by $15-25',
-  ]},
-],
-2:[
-  {cat:'🥩 Protein',items:['Rump steak 3.9kg (~$78 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner)', 'Chicken breast 1.2kg', 'Eggs x20', 'Short-cut bacon 2 packs', 'Tuna cans x4', 'Turkey breast 200g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
-  {cat:'🌾 Carbs',items:['White rice 2kg', 'Sweet potato x4', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 300g', 'Egg noodles 330g', 'Wholegrain wraps x4', 'Flour tortillas', 'Rice cakes 1 pack', 'Dextrose or Gatorade powder']},
-  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x5', 'Mushrooms 2 packs', 'Broccoli x2', 'Broccolini 1 bunch', 'Asparagus 1 bunch', 'Zucchini x2', 'Cherry tomatoes 2 punnets', 'Spinach bag', 'Potato x3', 'Pumpkin piece']},
-  {cat:'🍓 Fruit & Dairy',items:['Banana x10', 'Berries frozen 500g', 'Mango frozen 300g', 'Apple x3', 'Lemon x2', 'Greek yogurt 1kg', 'Cottage cheese 500g', 'Milk 2.5L', 'Avocado x4', 'Cheese block']},
-  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar', 'Honey large', 'Peanut butter', 'Granola 300g', 'Almonds 150g', 'Salsa jar', 'Creatine 5g/day', 'Fish oil', 'Dark chocolate 85%']},
-],
-3:[
-  {cat:'🥩 Protein',items:['Rump steak 4.2kg (~$84 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner)', 'Chicken breast 1.4kg', 'Eggs x22', 'Short-cut bacon 2 packs', 'Tuna cans x5', 'Turkey breast 220g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
-  {cat:'🌾 Carbs',items:['White rice 2kg', 'Sweet potato x5', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 350g', 'Egg noodles 360g', 'Wholegrain wraps x4', 'Flour tortillas', 'Rice cakes 2 packs', 'Dextrose powder']},
-  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x5', 'Mushrooms 3 packs', 'Broccoli x2', 'Broccolini 2 bunches', 'Asparagus 1 bunch', 'Zucchini x3', 'Cherry tomatoes 2 punnets', 'Spinach large bag', 'Potato x4', 'Pumpkin piece', 'Parsnip x2']},
-  {cat:'🍓 Fruit & Dairy',items:['Banana x12', 'Berries frozen 750g', 'Mango frozen 300g', 'Blueberries punnet', 'Apple x4', 'Lemon x2', 'Greek yogurt 1kg x2', 'Cottage cheese 500g', 'Milk 3L', 'Avocado x5', 'Feta cheese', 'Parmesan']},
-  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar large', 'Honey large', 'Peanut butter large', 'Granola 400g', 'Almonds 200g', 'Chia seeds', 'Salsa jar', 'Taco seasoning', 'Gatorade', 'Creatine 5g/day', 'Fish oil', 'Vitamin D3+K2', 'Dark chocolate 85%']},
-],
-4:[
-  {cat:'🥩 Protein',items:['Rump steak 4.5kg (~$90 @ $19.99/kg)', 'Salmon fillets x2 (Tue dinner — keep for omega-3s)', 'Chicken breast 1.6kg', 'Eggs x24', 'Short-cut bacon 2 packs', 'Tuna cans x6', 'Turkey breast 250g', 'Whey protein 2kg tub', 'Casein protein 1kg tub']},
-  {cat:'🌾 Carbs',items:['White rice 2.5kg', 'Sweet potato x5', 'Rolled oats 1kg', 'Sourdough 1 loaf', 'Wholegrain pasta 400g', 'Egg noodles 400g', 'Wholegrain wraps x6', 'Flour tortillas', 'Rice cakes 2 packs', 'Dextrose powder', 'English muffins x4']},
-  {cat:'🥦 Vegetables',items:['Bok choy x2', 'Capsicum x6', 'Mushrooms 3 packs', 'Broccoli x2', 'Broccolini 2 bunches', 'Asparagus 1 bunch', 'Zucchini x3', 'Cherry tomatoes 3 punnets', 'Spinach large bag', 'Potato x4', 'Pumpkin piece', 'Parsnip x2', 'Peas frozen bag', 'Corn frozen bag']},
-  {cat:'🍓 Fruit & Dairy',items:['Banana x14', 'Berries frozen 1kg', 'Mango frozen 400g', 'Blueberries punnet', 'Apple x4', 'Lemon x2', 'Greek yogurt 1kg x2', 'Cottage cheese 500g', 'Milk 3L', 'Avocado x6', 'Feta cheese', 'Parmesan', 'Cheese block']},
-  {cat:'🫙 Pantry & Supps',items:['Olive oil', 'Soy sauce', 'Oyster sauce', 'Sesame oil', 'Pesto jar large', 'Honey large', 'Peanut butter large', 'Granola 500g', 'Almonds 300g', 'Chia seeds', 'Salsa jar', 'Taco seasoning', 'Gatorade / electrolytes', 'Dextrose powder', 'Creatine monohydrate 5g/day', 'Fish oil 3-5g EPA/DHA', 'Vitamin D3+K2 5000IU', 'ZMA before bed', 'Dark chocolate 85% x2 bars', 'Maple syrup']},
-],
+  2: [
+    'FRUIT & VEG --- (walk-in entrance)',
+    'Bananas - 18 bananas (~2100g)',
+    'Broccoli - 1470g (~4 heads)',
+    'Broccolini - 350g (~2 bunches)',
+    'Bok choy - 788g (~3 bunches)',
+    'Capsicum - 420g (~3 capsicums)',
+    'Mushrooms - 700g',
+    'Zucchini - 420g (~2 zucchini)',
+    'Baby spinach - 210g (~1 bag)',
+    'Cherry tomatoes - 280g (~1 punnet)',
+    'Sweet potato - 700g (~2 sweet potatoes)',
+    'MEAT & SEAFOOD ---',
+    'Chicken breast - 3360g (3.4kg)',
+    'Rump steak - 1050g (1.1kg)',
+    'Salmon fillets - 560g (0.6kg)',
+    'DAIRY & EGGS ---',
+    'Eggs - 1 dozen',
+    'Full cream milk - 4900ml (4.9L)',
+    'Greek yogurt - 2082g (2.1kg)',
+    'Cheddar cheese - 52g (small block)',
+    'PANTRY & DRY GOODS ---',
+    'Rolled oats - 612g',
+    'Jasmine rice - 1128g (1.1kg)',
+    'Penne pasta - 245g',
+    'Peanut butter - 166g (jar lasts ~2wk)',
+    'Almonds - 184g',
+    'Honey - check stock (jar lasts ~3wk)',
+    'Olive oil - check stock',
+    'Sesame oil - check stock',
+    'Soy sauce - check stock',
+    'Whey protein - 858g/wk from tub (0.9kg)',
+  ],
+  3: [
+    'FRUIT & VEG --- (walk-in entrance)',
+    'Bananas - 23 bananas (~2730g)',
+    'Broccoli - 1470g (~4 heads)',
+    'Broccolini - 350g (~2 bunches)',
+    'Bok choy - 788g (~3 bunches)',
+    'Capsicum - 420g (~3 capsicums)',
+    'Mushrooms - 700g',
+    'Zucchini - 420g (~2 zucchini)',
+    'Baby spinach - 210g (~1 bag)',
+    'Cherry tomatoes - 280g (~1 punnet)',
+    'Sweet potato - 910g (~3 sweet potatoes)',
+    'MEAT & SEAFOOD ---',
+    'Chicken breast - 3640g (3.6kg)',
+    'Rump steak - 1102g (1.1kg)',
+    'Salmon fillets - 595g (0.6kg)',
+    'DAIRY & EGGS ---',
+    'Eggs - 1 dozen',
+    'Full cream milk - 4900ml (4.9L)',
+    'Greek yogurt - 2205g (2.2kg)',
+    'Cheddar cheese - 52g (small block)',
+    'PANTRY & DRY GOODS ---',
+    'Rolled oats - 796g',
+    'Jasmine rice - 1548g (1.5kg)',
+    'Penne pasta - 298g',
+    'Peanut butter - 183g (jar lasts ~2wk)',
+    'Almonds - 245g',
+    'Honey - check stock (jar lasts ~3wk)',
+    'Olive oil - check stock',
+    'Sesame oil - check stock',
+    'Soy sauce - check stock',
+    'Whey protein - 858g/wk from tub (0.9kg)',
+  ],
+  4: [
+    'FRUIT & VEG --- (walk-in entrance)',
+    'Bananas - 26 bananas (~3150g)',
+    'Broccoli - 1470g (~4 heads)',
+    'Broccolini - 350g (~2 bunches)',
+    'Bok choy - 788g (~3 bunches)',
+    'Capsicum - 420g (~3 capsicums)',
+    'Mushrooms - 700g',
+    'Zucchini - 420g (~2 zucchini)',
+    'Baby spinach - 210g (~1 bag)',
+    'Cherry tomatoes - 280g (~1 punnet)',
+    'Sweet potato - 1050g (~4 sweet potatoes)',
+    'MEAT & SEAFOOD ---',
+    'Chicken breast - 3798g (3.8kg)',
+    'Rump steak - 1155g (1.2kg)',
+    'Salmon fillets - 630g (0.6kg)',
+    'DAIRY & EGGS ---',
+    'Eggs - 1 dozen',
+    'Full cream milk - 4900ml (4.9L)',
+    'Greek yogurt - 2450g (2.5kg)',
+    'Cheddar cheese - 52g (small block)',
+    'PANTRY & DRY GOODS ---',
+    'Rolled oats - 980g',
+    'Jasmine rice - 1794g (1.8kg)',
+    'Penne pasta - 350g',
+    'Peanut butter - 227g (jar lasts ~2wk)',
+    'Almonds - 306g',
+    'Honey - check stock (jar lasts ~3wk)',
+    'Olive oil - check stock',
+    'Sesame oil - check stock',
+    'Soy sauce - check stock',
+    'Whey protein - 858g/wk from tub (0.9kg)',
+  ],
 };
 
 // ═══════════════════════════════════
@@ -1658,40 +1580,42 @@ function buildMealCard(meal, idx, color) {
 }
 
 function renderNutShopping(c, block) {
-  var rumpKg = block.id===1?'3.5':block.id===2?'3.9':block.id===3?'4.2':'4.5';
-  var rumpCost = block.id===1?'~$70':block.id===2?'~$78':block.id===3?'~$84':'~$90';
-
   var noteDiv = document.createElement('div');
   noteDiv.style.cssText = 'background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 14px;margin-bottom:14px';
-  noteDiv.innerHTML = '<div style="font-size:9px;color:#22c55e;letter-spacing:2px;margin-bottom:4px">🥩 RUMP STEAK DEAL — $19.99/kg</div><div style="font-size:11px;color:#888;line-height:1.7">Buy '+rumpKg+'kg this week ('+rumpCost+') — covers 7 dinners for 2. Tuesday keep salmon for omega-3s to help manage elevated E2.</div>';
+  noteDiv.innerHTML = '<div style="font-size:9px;color:#22c55e;letter-spacing:2px;margin-bottom:4px">🛒 WEEKLY SHOP — WOOLWORTHS GAWLER</div><div style="font-size:11px;color:#888;line-height:1.7">All quantities cover Paul + Holly (~75% portions). Budget target under $270/week. Aisle order: entrance → meat → dairy → pantry.</div>';
   c.appendChild(noteDiv);
 
   var shopList = NUT_SHOPPING[block.id]||[];
-  shopList.forEach(function(cat) {
-    var catDiv = document.createElement('div');
-    catDiv.className = 'card';
-    catDiv.style.marginBottom = '12px';
-    catDiv.innerHTML = '<div style="font-size:11px;color:#aaa;letter-spacing:1.5px;margin-bottom:10px;font-weight:700">'+cat.cat+'</div>';
-    var itemsWrap = document.createElement('div');
-    itemsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px';
-    cat.items.forEach(function(item) {
-      var key = block.id+'_'+item;
+  var catDiv = null, itemsWrap = null;
+  shopList.forEach(function(entry) {
+    if (entry.indexOf('---') !== -1) {
+      // Category header
+      if (catDiv) c.appendChild(catDiv);
+      catDiv = document.createElement('div');
+      catDiv.className = 'card';
+      catDiv.style.marginBottom = '12px';
+      var label = entry.replace(/ ---.*/, '').replace('---','').trim();
+      catDiv.innerHTML = '<div style="font-size:11px;color:#aaa;letter-spacing:1.5px;margin-bottom:10px;font-weight:700">'+esc(label)+'</div>';
+      itemsWrap = document.createElement('div');
+      itemsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px';
+      catDiv.appendChild(itemsWrap);
+    } else if (itemsWrap) {
+      var key = block.id+'_'+entry;
       var checked = shopChecked[key]||false;
       var pill = document.createElement('div');
       pill.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;background:'+(checked?'rgba(34,197,94,0.08)':'rgba(255,255,255,0.03)')+';border:1px solid '+(checked?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.07)')+';border-radius:99px;cursor:pointer;transition:all .15s';
       pill.innerHTML = '<div style="width:12px;height:12px;border-radius:3px;border:1.5px solid '+(checked?'#22c55e':'#444')+';background:'+(checked?'#22c55e':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(checked?'<span style="color:#000;font-size:8px;font-weight:900">✓</span>':'')+'</div>'
-        +'<span style="font-size:11px;color:'+(checked?'#22c55e':'#888')+';font-family:DM Mono,monospace;text-decoration:'+(checked?'line-through':'none')+';white-space:nowrap">'+esc(item)+'</span>';
+        +'<span style="font-size:11px;color:'+(checked?'#22c55e':'#888')+';font-family:DM Mono,monospace;text-decoration:'+(checked?'line-through':'none')+';white-space:nowrap">'+esc(entry)+'</span>';
       pill.onclick = function(){ shopChecked[key]=!shopChecked[key]; renderNutrition(); };
       itemsWrap.appendChild(pill);
-    });
-    catDiv.appendChild(itemsWrap);
-    c.appendChild(catDiv);
+    }
   });
+  if (catDiv) c.appendChild(catDiv);
 }
 
 function renderNutBlocks(c) {
   var title = document.createElement('div');
-  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Reverse Diet Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">From 1,900 cal → lean bulk target over 7 weeks</div>';
+  title.innerHTML = '<div style="font-family:Cabinet Grotesk,sans-serif;font-size:20px;font-weight:900;margin-bottom:4px">Reverse Diet Roadmap</div><div style="font-size:11px;color:#555;margin-bottom:20px">Reverse diet → lean bulk. Move up when weight stable 10+ days.</div>';
   c.appendChild(title);
 
   NUT_BLOCKS.forEach(function(b, i) {
