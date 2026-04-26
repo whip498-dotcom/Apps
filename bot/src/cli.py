@@ -1,10 +1,14 @@
-"""CLI entrypoint.
+"""EdgeHawk CLI entrypoint.
 
 Usage examples:
 
-  python -m src.cli scan                  # one-shot premarket scan
-  python -m src.cli scan --loop 60        # rescan every 60s, alert new hits
-  python -m src.cli size 4.20 3.95        # sizing for entry=$4.20 stop=$3.95
+  python -m src.cli scan                       # one-shot squeeze scan
+  python -m src.cli scan --loop 60             # rescan every 60s, alert new hits
+  python -m src.cli watch                      # live conviction ranking (in-place)
+  python -m src.cli watch --interval 15 --top 20
+  python -m src.cli briefing                   # Claude daily briefing (auto-detect slot)
+  python -m src.cli briefing --slot premarket  # force a specific slot
+  python -m src.cli size 4.20 3.95             # sizing for entry=$4.20 stop=$3.95
   python -m src.cli enter NVNI gap_and_go 4.20 3.95 200
   python -m src.cli exit 17 5.10
   python -m src.cli stats
@@ -18,11 +22,14 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .alerts.discord import send_candidates, send_text
+from .alerts.discord import send_briefing_payload, send_candidates, send_text
+from .briefing.briefing import ALL_SLOTS, auto_slot, run_briefing
+from .briefing.render import briefing_to_discord_payload, render_briefing
 from .config import CONFIG
 from .journal.journal import all_trades, log_entry, log_exit, open_trades, trade_pnl
 from .journal.stats import compute_stats, overall_stats
-from .scanner.scanner import Candidate, scan, scan_summary
+from .scanner.live import watch as live_watch
+from .scanner.scanner import Candidate, alert_worthy, scan, scan_summary
 from .sizing.sizing import size_trade
 
 console = Console()
@@ -32,19 +39,27 @@ def _print_candidates(cs: list[Candidate]) -> None:
     if not cs:
         console.print("[yellow]No candidates passed filters.[/yellow]")
         return
-    table = Table(title=f"Premarket candidates ({len(cs)})")
-    for col in ("Symbol", "Price", "Gap%", "RVol", "PM Vol", "Float", "Score", "Catalyst", "Flags"):
+    table = Table(title=f"Squeeze candidates ({len(cs)})")
+    for col in ("Sym", "Conf", "Price", "Gap%", "RVol", "Float", "SI%", "DTC", "PMH", "PDH", "Catalyst", "Flags"):
         table.add_column(col)
     for c in cs:
-        cat = c.catalysts[0].headline[:60] if c.catalysts else ""
+        cat = c.catalysts[0].headline[:50] if c.catalysts else ""
+        si = c.short_interest
+        si_pct = f"{si.short_pct_float*100:.0f}%" if si and si.short_pct_float is not None else "?"
+        dtc = f"{si.days_to_cover:.1f}" if si and si.days_to_cover is not None else "?"
+        pmh = f"${c.quote.levels.pmh:.2f}" if c.quote.levels.pmh is not None else "?"
+        pdh = f"${c.quote.levels.pdh:.2f}" if c.quote.levels.pdh is not None else "?"
         table.add_row(
             c.symbol,
+            f"{c.confidence}/10",
             f"${c.quote.last:.2f}",
             f"{c.quote.gap_pct:+.1f}",
             f"{c.quote.relative_volume:.1f}x",
-            f"{c.quote.premarket_volume:,}",
             f"{c.float_shares/1_000_000:.1f}M" if c.float_shares else "?",
-            f"{c.score:.1f}",
+            si_pct,
+            dtc,
+            pmh,
+            pdh,
             cat,
             ",".join(c.flags),
         )
@@ -53,7 +68,35 @@ def _print_candidates(cs: list[Candidate]) -> None:
 
 @click.group()
 def cli() -> None:
-    """Small-cap premarket momentum toolkit."""
+    """EdgeHawk — small-cap squeeze scanner & trading toolkit."""
+
+
+@cli.command("watch")
+@click.option("--interval", default=30, help="Refresh interval in seconds")
+@click.option("--top", default=15, help="Number of ranked rows to render")
+def watch_cmd(interval: int, top: int) -> None:
+    """Live conviction ranking — in-place, refreshes on a timer."""
+    try:
+        live_watch(interval=interval, top=top, console=console)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]EdgeHawk watch stopped.[/yellow]")
+
+
+@cli.command("briefing")
+@click.option("--slot", type=click.Choice(list(ALL_SLOTS)), default=None,
+              help="Briefing slot. Auto-detected from current ET time if omitted.")
+@click.option("--alert/--no-alert", default=True, help="Post to Discord")
+@click.option("--print/--no-print", "do_print", default=True, help="Render to terminal")
+def briefing_cmd(slot, alert, do_print) -> None:
+    """Generate Claude's daily briefing (3 longs + 3 shorts, levels & timing)."""
+    chosen = slot or auto_slot()
+    console.print(f"[cyan]Running EdgeHawk briefing — slot={chosen}[/cyan]")
+    briefing = run_briefing(chosen)
+    if do_print:
+        render_briefing(briefing, console)
+    if alert:
+        ok = send_briefing_payload(briefing_to_discord_payload(briefing))
+        console.print(f"[cyan]Discord briefing posted: {ok}[/cyan]")
 
 
 @cli.command("scan")
@@ -61,7 +104,7 @@ def cli() -> None:
 @click.option("--alert/--no-alert", default=True, help="Send Discord alerts")
 @click.option("--top", default=10, help="Max candidates to show / alert")
 def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
-    """Run the premarket scanner."""
+    """Run the squeeze scanner once (or in a logging loop)."""
     seen: set[str] = set()
     while True:
         ts = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
@@ -70,10 +113,14 @@ def scan_cmd(loop_seconds: int, alert: bool, top: int) -> None:
         _print_candidates(cs)
 
         if alert:
-            new = [c for c in cs if c.symbol not in seen]
+            # Only fire on confidence >= CONFIG.min_confidence so the
+            # #trade-ideas channel doesn't get spammed with mid-tier setups.
+            new = [c for c in cs if c.symbol not in seen and alert_worthy(c)]
             if new:
                 ok = send_candidates(new, top_n=top)
-                console.print(f"[cyan]Alert sent: {ok} ({len(new)} new)[/cyan]")
+                console.print(
+                    f"[cyan]Alert sent: {ok} ({len(new)} new ≥ conf {CONFIG.min_confidence})[/cyan]"
+                )
                 seen.update(c.symbol for c in new)
 
         if loop_seconds <= 0:
@@ -191,7 +238,7 @@ def trades_cmd(limit):
 @cli.command("ping")
 def ping_cmd():
     """Test the Discord webhook."""
-    ok = send_text("✅ Premarket scanner ping — webhook works.")
+    ok = send_text("✅ EdgeHawk ping — webhook works.")
     console.print(f"Discord: {'OK' if ok else 'FAILED (check DISCORD_WEBHOOK_URL)'}")
 
 

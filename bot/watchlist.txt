@@ -1,0 +1,2 @@
+# One ticker per line. Lines starting with # are ignored.
+# Add symbols you want to scan every morning.

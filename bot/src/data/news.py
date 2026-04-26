@@ -12,6 +12,7 @@ from typing import Optional
 import finnhub
 
 from ..config import CONFIG
+from . import finnhub_pool
 
 # Keywords commonly associated with explosive small-cap moves.
 # Order matters loosely — earlier = stronger signal.
@@ -58,9 +59,7 @@ def _classify(text: str) -> list[str]:
 
 
 def _client() -> Optional[finnhub.Client]:
-    if not CONFIG.finnhub_key:
-        return None
-    return finnhub.Client(api_key=CONFIG.finnhub_key)
+    return finnhub_pool.next_client()
 
 
 def fetch_recent_news(symbol: str, hours: int = 24) -> list[NewsItem]:

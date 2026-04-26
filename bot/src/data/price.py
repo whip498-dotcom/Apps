@@ -5,13 +5,16 @@ on the current day. We use it as the primary source.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+from .levels import KeyLevels, compute_levels
 
 
 @dataclass
@@ -23,6 +26,7 @@ class Quote:
     avg_volume_30d: float
     gap_pct: float
     timestamp: datetime
+    levels: KeyLevels = field(default_factory=lambda: KeyLevels(symbol=""))
 
     @property
     def relative_volume(self) -> float:
@@ -56,6 +60,8 @@ def fetch_quote(symbol: str) -> Optional[Quote]:
     pm_vol = int(today_bars["Volume"].sum())
     gap_pct = ((last / prev_close) - 1.0) * 100.0 if prev_close else 0.0
 
+    levels = compute_levels(symbol, intraday, daily)
+
     return Quote(
         symbol=symbol.upper(),
         last=last,
@@ -64,17 +70,28 @@ def fetch_quote(symbol: str) -> Optional[Quote]:
         avg_volume_30d=avg_vol_30d,
         gap_pct=gap_pct,
         timestamp=datetime.now(timezone.utc),
+        levels=levels,
     )
 
 
-def fetch_quotes(symbols: list[str]) -> dict[str, Quote]:
-    """Bulk fetch with graceful failure on any single symbol."""
+def fetch_quotes(symbols: list[str], max_workers: int = 8) -> dict[str, Quote]:
+    """Bulk fetch with graceful failure on any single symbol.
+
+    Runs in a thread pool — yfinance is I/O bound on HTTP calls, so each
+    sequential fetch with retries was making the 24/7 scan loop drag long
+    enough that later names in the universe never got their turn before the
+    next iteration kicked off.
+    """
     out: dict[str, Quote] = {}
-    for s in symbols:
-        try:
-            q = fetch_quote(s)
+    if not symbols:
+        return out
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(fetch_quote, s): s for s in symbols}
+        for fut in as_completed(futures):
+            try:
+                q = fut.result()
+            except Exception:
+                continue
             if q is not None:
-                out[s] = q
-        except Exception:
-            continue
+                out[q.symbol] = q
     return out
